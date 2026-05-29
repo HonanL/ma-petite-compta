@@ -219,7 +219,40 @@ export const formatMoney = (amount: number) =>
     maximumFractionDigits: 0
   }).format(amount);
 
-export const getMonthKey = (date = new Date()) => date.toISOString().slice(0, 7);
+export const formatLocalDateInput = (date = new Date()) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+};
+
+export const getMonthKey = (date = new Date()) => formatLocalDateInput(date).slice(0, 7);
+
+export const formatFrenchDate = (dateInput: string) => {
+  const [year, month, day] = dateInput.split("-").map(Number);
+  if (!year || !month || !day) {
+    return dateInput;
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(new Date(year, month - 1, day));
+};
+
+export const formatFrenchMonth = (monthInput: string) => {
+  const [year, month] = monthInput.split("-").map(Number);
+  if (!year || !month) {
+    return monthInput;
+  }
+
+  return new Intl.DateTimeFormat("fr-FR", {
+    month: "long",
+    year: "numeric"
+  }).format(new Date(year, month - 1, 1));
+};
 
 export const accountNormalSide: Record<AccountType, "debit" | "credit"> = {
   actif: "debit",
@@ -297,21 +330,21 @@ export const calculateSummary = (transactions: Transaction[], monthKey = getMont
 
 export const demoTransactions = (): Transaction[] => [
   createTransaction({
-    date: new Date().toISOString().slice(0, 10),
+    date: formatLocalDateInput(),
     kind: "owner-investment",
     label: "Apport initial",
     amount: 2500,
     note: "Capital de départ"
   }),
   createTransaction({
-    date: new Date().toISOString().slice(0, 10),
+    date: formatLocalDateInput(),
     kind: "client-payment",
     label: "Mission de conseil",
     amount: 900,
     note: "Facture client payée"
   }),
   createTransaction({
-    date: new Date().toISOString().slice(0, 10),
+    date: formatLocalDateInput(),
     kind: "cash-expense",
     label: "Abonnement logiciel",
     amount: 120,

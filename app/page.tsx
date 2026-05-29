@@ -24,10 +24,14 @@ import {
 import { FormEvent, useMemo, useState } from "react";
 import {
   AccountType,
+  accountNormalSide,
   accountTypeLabels,
   calculateAccountBalances,
   calculateSummary,
   createTransaction,
+  formatFrenchDate,
+  formatFrenchMonth,
+  formatLocalDateInput,
   formatMoney,
   getMonthKey,
   sum,
@@ -101,9 +105,19 @@ const lessons = [
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
-  const { transactions, loaded, addTransaction, clearTransactions } = useTransactions();
+  const { transactions, loaded, addTransaction, deleteTransaction, clearTransactions } = useTransactions();
   const summary = useMemo(() => calculateSummary(transactions), [transactions]);
   const balances = useMemo(() => calculateAccountBalances(transactions), [transactions]);
+
+  const confirmClearTransactions = () => {
+    const confirmed = window.confirm(
+      "Êtes-vous sûr de vouloir supprimer toutes les transactions ? Cette action est irréversible."
+    );
+
+    if (confirmed) {
+      clearTransactions();
+    }
+  };
 
   return (
     <main className="min-h-screen">
@@ -146,7 +160,7 @@ export default function Home() {
             <p className="mt-2 text-sm text-moss">Les données restent dans ce navigateur avec localStorage.</p>
             <button
               type="button"
-              onClick={clearTransactions}
+              onClick={confirmClearTransactions}
               className="mt-3 inline-flex min-h-10 items-center gap-2 border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-clay hover:text-clay"
               style={{ borderRadius: 6 }}
             >
@@ -161,7 +175,9 @@ export default function Home() {
             <div className="panel p-8">Chargement...</div>
           ) : (
             <>
-              {tab === "dashboard" && <Dashboard summary={summary} transactions={transactions} setTab={setTab} />}
+              {tab === "dashboard" && (
+                <Dashboard summary={summary} transactions={transactions} setTab={setTab} onDeleteTransaction={deleteTransaction} />
+              )}
               {tab === "add" && <AddTransaction onAdd={addTransaction} />}
               {tab === "reports" && <Reports transactions={transactions} balances={balances} summary={summary} />}
               {tab === "learn" && <Learning />}
@@ -176,11 +192,13 @@ export default function Home() {
 function Dashboard({
   summary,
   transactions,
-  setTab
+  setTab,
+  onDeleteTransaction
 }: {
   summary: ReturnType<typeof calculateSummary>;
   transactions: Transaction[];
   setTab: (tab: Tab) => void;
+  onDeleteTransaction: (id: string) => void;
 }) {
   const cards = [
     { label: "Argent disponible", english: "Cash Available", value: summary.cash, icon: Banknote },
@@ -233,10 +251,10 @@ function Dashboard({
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold">Dernières transactions</h2>
-            <p className="text-sm text-moss">Mois courant: {getMonthKey()}</p>
+            <p className="text-sm text-moss">Mois courant: {formatFrenchMonth(getMonthKey())}</p>
           </div>
         </div>
-        <TransactionList transactions={transactions.slice(0, 6)} />
+        <TransactionList transactions={transactions.slice(0, 6)} onDeleteTransaction={onDeleteTransaction} />
       </section>
     </div>
   );
@@ -246,7 +264,7 @@ function AddTransaction({ onAdd }: { onAdd: (transaction: Transaction) => void }
   const [kind, setKind] = useState<TransactionKind>("client-payment");
   const [amount, setAmount] = useState("250");
   const [label, setLabel] = useState("Nouvelle vente");
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [date, setDate] = useState(formatLocalDateInput());
   const [note, setNote] = useState("");
   const preview = useMemo(() => createTransaction({ kind, amount: Number(amount) || 0, label, date, note }), [kind, amount, label, date, note]);
 
@@ -320,6 +338,7 @@ function Reports({
   const equity = balances.filter((line) => line.accountType === "capitaux propres");
   const totalDebits = sum(balances.map((line) => line.debit));
   const totalCredits = sum(balances.map((line) => line.credit));
+  const trialBalanceBalanced = totalDebits === totalCredits;
 
   return (
     <div className="space-y-5">
@@ -348,11 +367,12 @@ function Reports({
       <section className="panel overflow-hidden p-4">
         <ReportTitle title="Balance de vérification" english="Trial Balance" />
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[680px] text-left text-sm">
+          <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="border-b border-black/10 text-xs uppercase text-moss">
               <tr>
                 <th className="py-3 pr-3">Compte</th>
                 <th className="py-3 pr-3">Type</th>
+                <th className="py-3 pr-3">Solde normal</th>
                 <th className="py-3 pr-3 text-right">Débit (Debit)</th>
                 <th className="py-3 pr-3 text-right">Crédit (Credit)</th>
               </tr>
@@ -362,6 +382,10 @@ function Reports({
                 <tr key={line.account} className="border-b border-black/5">
                   <td className="py-3 pr-3 font-semibold">{line.account}</td>
                   <td className="py-3 pr-3">{accountTypeLabels[line.accountType]}</td>
+                  <td className="py-3 pr-3">
+                    {accountNormalSide[line.accountType] === "debit" ? "Solde débiteur" : "Solde créditeur"}:{" "}
+                    {formatMoney(line.balance)}
+                  </td>
                   <td className="py-3 pr-3 text-right">{formatMoney(line.debit)}</td>
                   <td className="py-3 pr-3 text-right">{formatMoney(line.credit)}</td>
                 </tr>
@@ -369,7 +393,7 @@ function Reports({
             </tbody>
             <tfoot className="font-bold">
               <tr>
-                <td className="py-3 pr-3" colSpan={2}>
+                <td className="py-3 pr-3" colSpan={3}>
                   Totaux
                 </td>
                 <td className="py-3 pr-3 text-right">{formatMoney(totalDebits)}</td>
@@ -378,8 +402,9 @@ function Reports({
             </tfoot>
           </table>
         </div>
-        <p className="mt-3 text-sm font-semibold text-moss">
-          Vérification: {totalDebits === totalCredits ? "débits = crédits" : "écart à corriger"} ({transactions.length} transaction(s)).
+        <p className={`mt-3 text-sm font-semibold ${trialBalanceBalanced ? "text-moss" : "text-clay"}`}>
+          Balance {trialBalanceBalanced ? "équilibrée" : "non équilibrée"}: total des débits {formatMoney(totalDebits)} et
+          total des crédits {formatMoney(totalCredits)} ({transactions.length} transaction(s)).
         </p>
       </section>
     </div>
@@ -434,10 +459,24 @@ function Field({ label, id, children }: { label: string; id: string; children: R
   );
 }
 
-function TransactionList({ transactions }: { transactions: Transaction[] }) {
+function TransactionList({
+  transactions,
+  onDeleteTransaction
+}: {
+  transactions: Transaction[];
+  onDeleteTransaction: (id: string) => void;
+}) {
   if (!transactions.length) {
     return <p className="text-sm text-moss">Aucune transaction enregistrée.</p>;
   }
+
+  const confirmDelete = (transaction: Transaction) => {
+    const confirmed = window.confirm(`Supprimer la transaction "${transaction.label}" ? Cette action est irréversible.`);
+
+    if (confirmed) {
+      onDeleteTransaction(transaction.id);
+    }
+  };
 
   return (
     <div className="grid gap-3">
@@ -447,10 +486,20 @@ function TransactionList({ transactions }: { transactions: Transaction[] }) {
             <div>
               <p className="font-bold">{transaction.label}</p>
               <p className="text-sm text-moss">
-                {transaction.date} - {transactionTemplates.find((template) => template.kind === transaction.kind)?.title}
+                {formatFrenchDate(transaction.date)} - {transactionTemplates.find((template) => template.kind === transaction.kind)?.title}
               </p>
             </div>
-            <p className="text-lg font-bold">{formatMoney(transaction.amount)}</p>
+            <div className="flex items-center gap-3 self-start">
+              <p className="text-lg font-bold">{formatMoney(transaction.amount)}</p>
+              <button
+                type="button"
+                onClick={() => confirmDelete(transaction)}
+                className="inline-flex min-h-9 items-center justify-center border border-black/10 bg-white px-3 text-sm font-semibold text-clay hover:border-clay"
+                style={{ borderRadius: 6 }}
+              >
+                Supprimer
+              </button>
+            </div>
           </div>
           <p className="mt-2 text-sm leading-6 text-moss">{transaction.generated.explanation}</p>
         </article>
