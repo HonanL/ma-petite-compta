@@ -33,6 +33,7 @@ const isTransaction = (value: unknown): value is Transaction => {
     typeof candidate.amount === "number" &&
     Number.isFinite(candidate.amount) &&
     candidate.amount > 0 &&
+    (candidate.category === undefined || typeof candidate.category === "string") &&
     typeof candidate.kind === "string" &&
     transactionKinds.includes(candidate.kind as TransactionKind)
   );

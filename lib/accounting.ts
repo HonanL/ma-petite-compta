@@ -36,6 +36,7 @@ export type Transaction = {
   kind: TransactionKind;
   label: string;
   amount: number;
+  category?: string;
   note?: string;
   generated: GeneratedAccounting;
 };
@@ -203,7 +204,7 @@ export const generateAccounting = (kind: TransactionKind, amount: number): Gener
 };
 
 export const createTransaction = (
-  input: Pick<Transaction, "date" | "kind" | "label" | "amount" | "note">
+  input: Pick<Transaction, "date" | "kind" | "label" | "amount" | "category" | "note">
 ): Transaction => ({
   ...input,
   id: crypto.randomUUID(),

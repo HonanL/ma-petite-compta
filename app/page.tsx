@@ -5,6 +5,7 @@ import {
   ArrowUpRight,
   BadgeEuro,
   Banknote,
+  BriefcaseBusiness,
   Building2,
   CheckCircle2,
   ClipboardList,
@@ -39,15 +40,22 @@ import {
   TransactionKind,
   transactionTemplates
 } from "@/lib/accounting";
+import {
+  BusinessProfile,
+  businessProfiles,
+  getBusinessProfileDefinition
+} from "@/lib/businessProfile";
+import { useBusinessProfile } from "@/lib/useBusinessProfile";
 import { useTransactions } from "@/lib/useTransactions";
 
-type Tab = "dashboard" | "add" | "reports" | "learn";
+type Tab = "dashboard" | "add" | "reports" | "learn" | "profile";
 
 const navigation = [
   { id: "dashboard" as Tab, label: "Tableau de bord", icon: LayoutDashboard },
   { id: "add" as Tab, label: "Ajouter", icon: Plus },
   { id: "reports" as Tab, label: "Rapports", icon: FileBarChart2 },
-  { id: "learn" as Tab, label: "Apprentissage", icon: GraduationCap }
+  { id: "learn" as Tab, label: "Apprentissage", icon: GraduationCap },
+  { id: "profile" as Tab, label: "Profil d'entreprise", icon: BriefcaseBusiness }
 ];
 
 const lessons = [
@@ -106,8 +114,10 @@ const lessons = [
 export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const { transactions, loaded, addTransaction, deleteTransaction, clearTransactions } = useTransactions();
+  const { profile, loaded: profileLoaded, setProfile } = useBusinessProfile();
   const summary = useMemo(() => calculateSummary(transactions), [transactions]);
   const balances = useMemo(() => calculateAccountBalances(transactions), [transactions]);
+  const businessProfile = getBusinessProfileDefinition(profile);
 
   const confirmClearTransactions = () => {
     const confirmed = window.confirm(
@@ -158,6 +168,7 @@ export default function Home() {
           <div className="mt-auto border-t border-black/10 pt-4">
             <p className="label">Stockage (Storage)</p>
             <p className="mt-2 text-sm text-moss">Les données restent dans ce navigateur avec localStorage.</p>
+            <p className="mt-2 text-sm font-semibold text-ink">Profil: {profile}</p>
             <button
               type="button"
               onClick={confirmClearTransactions}
@@ -171,16 +182,17 @@ export default function Home() {
         </aside>
 
         <section className="flex-1">
-          {!loaded ? (
+          {!loaded || !profileLoaded ? (
             <div className="panel p-8">Chargement...</div>
           ) : (
             <>
               {tab === "dashboard" && (
                 <Dashboard summary={summary} transactions={transactions} setTab={setTab} onDeleteTransaction={deleteTransaction} />
               )}
-              {tab === "add" && <AddTransaction onAdd={addTransaction} />}
+              {tab === "add" && <AddTransaction onAdd={addTransaction} businessProfile={businessProfile} />}
               {tab === "reports" && <Reports transactions={transactions} balances={balances} summary={summary} />}
               {tab === "learn" && <Learning />}
+              {tab === "profile" && <BusinessProfileView profile={profile} setProfile={setProfile} />}
             </>
           )}
         </section>
@@ -260,21 +272,46 @@ function Dashboard({
   );
 }
 
-function AddTransaction({ onAdd }: { onAdd: (transaction: Transaction) => void }) {
+function getCategoryOptions(kind: TransactionKind, businessProfile: ReturnType<typeof getBusinessProfileDefinition>) {
+  if (kind === "client-payment") {
+    return businessProfile.revenues;
+  }
+
+  if (["cash-expense", "equipment-purchase", "supplies-credit", "supplier-payment"].includes(kind)) {
+    return businessProfile.expenses;
+  }
+
+  return [];
+}
+
+function AddTransaction({
+  onAdd,
+  businessProfile
+}: {
+  onAdd: (transaction: Transaction) => void;
+  businessProfile: ReturnType<typeof getBusinessProfileDefinition>;
+}) {
   const [kind, setKind] = useState<TransactionKind>("client-payment");
   const [amount, setAmount] = useState("250");
   const [label, setLabel] = useState("Nouvelle vente");
   const [date, setDate] = useState(formatLocalDateInput());
+  const categoryOptions = useMemo(() => getCategoryOptions(kind, businessProfile), [kind, businessProfile]);
+  const [category, setCategory] = useState(categoryOptions[0] ?? "");
+  const selectedCategory = categoryOptions.includes(category) ? category : categoryOptions[0] ?? "";
   const [note, setNote] = useState("");
-  const preview = useMemo(() => createTransaction({ kind, amount: Number(amount) || 0, label, date, note }), [kind, amount, label, date, note]);
+  const preview = useMemo(
+    () => createTransaction({ kind, amount: Number(amount) || 0, label, date, category: selectedCategory, note }),
+    [kind, amount, label, date, selectedCategory, note]
+  );
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const numericAmount = Number(amount);
     if (!numericAmount || numericAmount <= 0) return;
-    onAdd(createTransaction({ kind, amount: numericAmount, label, date, note }));
+    onAdd(createTransaction({ kind, amount: numericAmount, label, date, category: selectedCategory, note }));
     setLabel("");
     setAmount("");
+    setCategory("");
     setNote("");
   };
 
@@ -295,6 +332,27 @@ function AddTransaction({ onAdd }: { onAdd: (transaction: Transaction) => void }
               ))}
             </select>
             <p className="mt-2 text-sm text-moss">{transactionTemplates.find((template) => template.kind === kind)?.helper}</p>
+          </div>
+          <div>
+            <label className="label" htmlFor="category">
+              Catégorie adaptée
+            </label>
+            {categoryOptions.length ? (
+              <>
+                <select id="category" value={selectedCategory} onChange={(event) => setCategory(event.target.value)} className="input mt-2">
+                  {categoryOptions.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-sm text-moss">Suggestions pour le profil: {businessProfile.profile}.</p>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-moss">
+                Aucune catégorie recommandée pour ce type de transaction. La logique comptable reste inchangée.
+              </p>
+            )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Date" id="date">
@@ -435,6 +493,63 @@ function Learning() {
   );
 }
 
+function BusinessProfileView({
+  profile,
+  setProfile
+}: {
+  profile: BusinessProfile;
+  setProfile: (profile: BusinessProfile) => void;
+}) {
+  const selectedProfile = getBusinessProfileDefinition(profile);
+
+  return (
+    <div className="space-y-5">
+      <Header
+        title="Profil d'entreprise"
+        subtitle="Ce profil aide Ma Petite Compta à proposer des catégories adaptées à votre activité."
+      />
+
+      <section className="panel p-4">
+        <label className="label" htmlFor="business-profile">
+          Type de business
+        </label>
+        <select
+          id="business-profile"
+          value={profile}
+          onChange={(event) => setProfile(event.target.value as BusinessProfile)}
+          className="input mt-2 max-w-xl"
+        >
+          {businessProfiles.map((definition) => (
+            <option key={definition.profile} value={definition.profile}>
+              {definition.profile}
+            </option>
+          ))}
+        </select>
+      </section>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <CategoryPanel title="Revenus proposés" categories={selectedProfile.revenues} />
+        <CategoryPanel title="Dépenses proposées" categories={selectedProfile.expenses} />
+      </div>
+    </div>
+  );
+}
+
+function CategoryPanel({ title, categories }: { title: string; categories: string[] }) {
+  return (
+    <section className="panel p-4">
+      <h2 className="text-lg font-bold">{title}</h2>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {categories.map((category) => (
+          <span key={category} className="border border-black/10 bg-mint px-3 py-2 text-sm font-semibold text-ink" style={{ borderRadius: 6 }}>
+            {category}
+          </span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function Header({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
   return (
     <header className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -488,6 +603,7 @@ function TransactionList({
               <p className="text-sm text-moss">
                 {formatFrenchDate(transaction.date)} - {transactionTemplates.find((template) => template.kind === transaction.kind)?.title}
               </p>
+              {transaction.category ? <p className="text-sm text-moss">Catégorie: {transaction.category}</p> : null}
             </div>
             <div className="flex items-center gap-3 self-start">
               <p className="text-lg font-bold">{formatMoney(transaction.amount)}</p>
@@ -517,6 +633,7 @@ function AccountingExplanation({ transaction }: { transaction: Transaction }) {
       <div>
         <p className="label">Explication automatique</p>
         <h2 className="mt-1 text-xl font-bold">Ce que la transaction change</h2>
+        {transaction.category ? <p className="mt-2 text-sm font-semibold text-ink">Catégorie: {transaction.category}</p> : null}
         <p className="mt-2 text-sm leading-6 text-moss">{transaction.generated.explanation}</p>
       </div>
 
