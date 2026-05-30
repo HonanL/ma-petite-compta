@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Transaction, TransactionKind, generateAccounting } from "@/lib/accounting";
+import { PaymentMethod, Transaction, TransactionKind, generateAccounting, paymentMethods } from "@/lib/accounting";
 
 const STORAGE_KEY = "ma-petite-compta-transactions";
 
@@ -17,6 +17,9 @@ const transactionKinds: TransactionKind[] = [
 ];
 
 const isValidDateInput = (value: unknown) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+const isPaymentMethod = (value: unknown): value is PaymentMethod =>
+  typeof value === "string" && paymentMethods.includes(value as PaymentMethod);
 
 const isTransaction = (value: unknown): value is Transaction => {
   if (!value || typeof value !== "object") {
@@ -34,6 +37,9 @@ const isTransaction = (value: unknown): value is Transaction => {
     Number.isFinite(candidate.amount) &&
     candidate.amount > 0 &&
     (candidate.category === undefined || typeof candidate.category === "string") &&
+    (candidate.paymentMethod === undefined || isPaymentMethod(candidate.paymentMethod)) &&
+    (candidate.partyName === undefined || typeof candidate.partyName === "string") &&
+    (candidate.note === undefined || typeof candidate.note === "string") &&
     typeof candidate.kind === "string" &&
     transactionKinds.includes(candidate.kind as TransactionKind)
   );
@@ -53,6 +59,10 @@ const readStoredTransactions = () => {
 
     return parsed.map((transaction) => ({
       ...transaction,
+      paymentMethod: transaction.paymentMethod ?? "Autre",
+      partyName: transaction.partyName ?? "",
+      category: transaction.category ?? "",
+      note: transaction.note ?? "",
       generated: generateAccounting(transaction.kind, transaction.amount)
     }));
   } catch {

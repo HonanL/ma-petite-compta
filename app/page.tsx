@@ -30,11 +30,13 @@ import {
   calculateAccountBalances,
   calculateSummary,
   createTransaction,
+  formatCurrency,
   formatFrenchDate,
   formatFrenchMonth,
   formatLocalDateInput,
-  formatMoney,
   getMonthKey,
+  PaymentMethod,
+  paymentMethods,
   sum,
   Transaction,
   TransactionKind,
@@ -253,7 +255,7 @@ function Dashboard({
                   <Icon size={20} aria-hidden />
                 </div>
               </div>
-              <p className="mt-4 text-2xl font-bold text-ink">{formatMoney(card.value)}</p>
+              <p className="mt-4 text-2xl font-bold text-ink">{formatCurrency(card.value)}</p>
             </article>
           );
         })}
@@ -298,20 +300,33 @@ function AddTransaction({
   const categoryOptions = useMemo(() => getCategoryOptions(kind, businessProfile), [kind, businessProfile]);
   const [category, setCategory] = useState(categoryOptions[0] ?? "");
   const selectedCategory = categoryOptions.includes(category) ? category : categoryOptions[0] ?? "";
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Virement");
+  const [partyName, setPartyName] = useState("");
   const [note, setNote] = useState("");
   const preview = useMemo(
-    () => createTransaction({ kind, amount: Number(amount) || 0, label, date, category: selectedCategory, note }),
-    [kind, amount, label, date, selectedCategory, note]
+    () =>
+      createTransaction({
+        kind,
+        amount: Number(amount) || 0,
+        label,
+        date,
+        category: selectedCategory,
+        paymentMethod,
+        partyName,
+        note
+      }),
+    [kind, amount, label, date, selectedCategory, paymentMethod, partyName, note]
   );
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const numericAmount = Number(amount);
     if (!numericAmount || numericAmount <= 0) return;
-    onAdd(createTransaction({ kind, amount: numericAmount, label, date, category: selectedCategory, note }));
+    onAdd(createTransaction({ kind, amount: numericAmount, label, date, category: selectedCategory, paymentMethod, partyName, note }));
     setLabel("");
     setAmount("");
     setCategory("");
+    setPartyName("");
     setNote("");
   };
 
@@ -358,13 +373,38 @@ function AddTransaction({
             <Field label="Date" id="date">
               <input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="input" required />
             </Field>
-            <Field label="Montant" id="amount">
-              <input id="amount" type="number" min="0" step="0.01" value={amount} onChange={(event) => setAmount(event.target.value)} className="input" required />
+            <Field label="Montant en FCFA" id="amount">
+              <input id="amount" type="number" min="0" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} className="input" placeholder="Ex: 25 000" required />
             </Field>
           </div>
-          <Field label="Libellé" id="label">
-            <input id="label" value={label} onChange={(event) => setLabel(event.target.value)} className="input" placeholder="Ex: Paiement client Dupont" required />
+          <Field label="Description" id="label">
+            <input id="label" value={label} onChange={(event) => setLabel(event.target.value)} className="input" placeholder="Ex: Assemblage meuble IKEA, Achat essence" required />
           </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Méthode de paiement" id="payment-method">
+              <select
+                id="payment-method"
+                value={paymentMethod}
+                onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
+                className="input"
+              >
+                {paymentMethods.map((method) => (
+                  <option key={method} value={method}>
+                    {method}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Client ou fournisseur facultatif" id="party-name">
+              <input
+                id="party-name"
+                value={partyName}
+                onChange={(event) => setPartyName(event.target.value)}
+                className="input"
+                placeholder="Ex: Client Dupont, Station Total"
+              />
+            </Field>
+          </div>
           <Field label="Note facultative" id="note">
             <textarea id="note" value={note} onChange={(event) => setNote(event.target.value)} className="input min-h-24 resize-y" placeholder="Détail utile pour vous relire plus tard" />
           </Field>
@@ -442,10 +482,10 @@ function Reports({
                   <td className="py-3 pr-3">{accountTypeLabels[line.accountType]}</td>
                   <td className="py-3 pr-3">
                     {accountNormalSide[line.accountType] === "debit" ? "Solde débiteur" : "Solde créditeur"}:{" "}
-                    {formatMoney(line.balance)}
+                    {formatCurrency(line.balance)}
                   </td>
-                  <td className="py-3 pr-3 text-right">{formatMoney(line.debit)}</td>
-                  <td className="py-3 pr-3 text-right">{formatMoney(line.credit)}</td>
+                  <td className="py-3 pr-3 text-right">{formatCurrency(line.debit)}</td>
+                  <td className="py-3 pr-3 text-right">{formatCurrency(line.credit)}</td>
                 </tr>
               ))}
             </tbody>
@@ -454,15 +494,15 @@ function Reports({
                 <td className="py-3 pr-3" colSpan={3}>
                   Totaux
                 </td>
-                <td className="py-3 pr-3 text-right">{formatMoney(totalDebits)}</td>
-                <td className="py-3 pr-3 text-right">{formatMoney(totalCredits)}</td>
+                <td className="py-3 pr-3 text-right">{formatCurrency(totalDebits)}</td>
+                <td className="py-3 pr-3 text-right">{formatCurrency(totalCredits)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
         <p className={`mt-3 text-sm font-semibold ${trialBalanceBalanced ? "text-moss" : "text-clay"}`}>
-          Balance {trialBalanceBalanced ? "équilibrée" : "non équilibrée"}: total des débits {formatMoney(totalDebits)} et
-          total des crédits {formatMoney(totalCredits)} ({transactions.length} transaction(s)).
+          Balance {trialBalanceBalanced ? "équilibrée" : "non équilibrée"}: total des débits {formatCurrency(totalDebits)} et
+          total des crédits {formatCurrency(totalCredits)} ({transactions.length} transaction(s)).
         </p>
       </section>
     </div>
@@ -603,10 +643,24 @@ function TransactionList({
               <p className="text-sm text-moss">
                 {formatFrenchDate(transaction.date)} - {transactionTemplates.find((template) => template.kind === transaction.kind)?.title}
               </p>
-              {transaction.category ? <p className="text-sm text-moss">Catégorie: {transaction.category}</p> : null}
+              <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
+                {transaction.category ? (
+                  <span className="border border-black/10 bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
+                    Catégorie: {transaction.category}
+                  </span>
+                ) : null}
+                <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+                  Paiement: {transaction.paymentMethod}
+                </span>
+                {transaction.partyName ? (
+                  <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+                    Client/fournisseur: {transaction.partyName}
+                  </span>
+                ) : null}
+              </div>
             </div>
             <div className="flex items-center gap-3 self-start">
-              <p className="text-lg font-bold">{formatMoney(transaction.amount)}</p>
+              <p className="text-lg font-bold">{formatCurrency(transaction.amount)}</p>
               <button
                 type="button"
                 onClick={() => confirmDelete(transaction)}
@@ -633,7 +687,21 @@ function AccountingExplanation({ transaction }: { transaction: Transaction }) {
       <div>
         <p className="label">Explication automatique</p>
         <h2 className="mt-1 text-xl font-bold">Ce que la transaction change</h2>
-        {transaction.category ? <p className="mt-2 text-sm font-semibold text-ink">Catégorie: {transaction.category}</p> : null}
+        <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
+          {transaction.category ? (
+            <span className="border border-black/10 bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
+              Catégorie: {transaction.category}
+            </span>
+          ) : null}
+          <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+            Paiement: {transaction.paymentMethod}
+          </span>
+          {transaction.partyName ? (
+            <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+              Client/fournisseur: {transaction.partyName}
+            </span>
+          ) : null}
+        </div>
         <p className="mt-2 text-sm leading-6 text-moss">{transaction.generated.explanation}</p>
       </div>
 
@@ -656,7 +724,7 @@ function AccountingExplanation({ transaction }: { transaction: Transaction }) {
         <div className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
           <p className="label">Vérification</p>
           <p className="mt-1 font-bold">
-            {formatMoney(debitTotal)} = {formatMoney(creditTotal)}
+            {formatCurrency(debitTotal)} = {formatCurrency(creditTotal)}
           </p>
           <p className="text-sm text-moss">{transaction.generated.debitsEqualCredits ? "Total des débits = total des crédits" : "Les totaux ne sont pas équilibrés"}</p>
         </div>
@@ -686,8 +754,8 @@ function JournalTable({ journal }: { journal: { account: string; accountType: Ac
             <tr key={`${line.account}-${line.debit}-${line.credit}`} className="border-b border-black/5">
               <td className="py-3 pr-3 font-semibold">{line.account}</td>
               <td className="py-3 pr-3">{accountTypeLabels[line.accountType]}</td>
-              <td className="py-3 pr-3 text-right">{line.debit ? formatMoney(line.debit) : "-"}</td>
-              <td className="py-3 pr-3 text-right">{line.credit ? formatMoney(line.credit) : "-"}</td>
+              <td className="py-3 pr-3 text-right">{line.debit ? formatCurrency(line.debit) : "-"}</td>
+              <td className="py-3 pr-3 text-right">{line.credit ? formatCurrency(line.credit) : "-"}</td>
             </tr>
           ))}
         </tbody>
@@ -718,7 +786,7 @@ function ReportLine({ label, value, strong = false }: { label: string; value: nu
   return (
     <div className={`flex items-center justify-between gap-4 border-b border-black/5 py-2 ${strong ? "font-bold text-ink" : "text-sm text-moss"}`}>
       <span>{label}</span>
-      <span>{formatMoney(value)}</span>
+      <span>{formatCurrency(value)}</span>
     </div>
   );
 }

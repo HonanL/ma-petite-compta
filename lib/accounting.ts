@@ -15,6 +15,8 @@ export type TransactionKind =
   | "owner-withdrawal"
   | "bank-loan";
 
+export type PaymentMethod = "Espèces" | "Carte bancaire" | "Virement" | "Chèque" | "Plateforme en ligne" | "Autre";
+
 export type JournalLine = {
   account: string;
   accountType: AccountType;
@@ -37,6 +39,8 @@ export type Transaction = {
   label: string;
   amount: number;
   category?: string;
+  paymentMethod: PaymentMethod;
+  partyName?: string;
   note?: string;
   generated: GeneratedAccounting;
 };
@@ -47,6 +51,8 @@ export type TransactionTemplate = {
   english: string;
   helper: string;
 };
+
+export const paymentMethods: PaymentMethod[] = ["Espèces", "Carte bancaire", "Virement", "Chèque", "Plateforme en ligne", "Autre"];
 
 export const transactionTemplates: TransactionTemplate[] = [
   {
@@ -204,7 +210,7 @@ export const generateAccounting = (kind: TransactionKind, amount: number): Gener
 };
 
 export const createTransaction = (
-  input: Pick<Transaction, "date" | "kind" | "label" | "amount" | "category" | "note">
+  input: Pick<Transaction, "date" | "kind" | "label" | "amount" | "category" | "paymentMethod" | "partyName" | "note">
 ): Transaction => ({
   ...input,
   id: crypto.randomUUID(),
@@ -213,12 +219,9 @@ export const createTransaction = (
 
 export const sum = (numbers: number[]) => numbers.reduce((total, value) => total + value, 0);
 
-export const formatMoney = (amount: number) =>
-  new Intl.NumberFormat("fr-FR", {
-    style: "currency",
-    currency: "EUR",
-    maximumFractionDigits: 0
-  }).format(amount);
+export const formatCurrency = (amount: number) => `${new Intl.NumberFormat("fr-FR", {
+  maximumFractionDigits: 0
+}).format(amount)} FCFA`;
 
 export const formatLocalDateInput = (date = new Date()) => {
   const year = date.getFullYear();
@@ -335,6 +338,7 @@ export const demoTransactions = (): Transaction[] => [
     kind: "owner-investment",
     label: "Apport initial",
     amount: 2500,
+    paymentMethod: "Virement",
     note: "Capital de départ"
   }),
   createTransaction({
@@ -342,6 +346,9 @@ export const demoTransactions = (): Transaction[] => [
     kind: "client-payment",
     label: "Mission de conseil",
     amount: 900,
+    category: "Revenus de service",
+    paymentMethod: "Virement",
+    partyName: "Client exemple",
     note: "Facture client payée"
   }),
   createTransaction({
@@ -349,6 +356,8 @@ export const demoTransactions = (): Transaction[] => [
     kind: "cash-expense",
     label: "Abonnement logiciel",
     amount: 120,
+    category: "Logiciels",
+    paymentMethod: "Carte bancaire",
     note: "Outil de gestion"
   })
 ];
