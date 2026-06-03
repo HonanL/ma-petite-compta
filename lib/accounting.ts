@@ -15,7 +15,14 @@ export type TransactionKind =
   | "owner-withdrawal"
   | "bank-loan";
 
-export type PaymentMethod = "Espèces" | "Carte bancaire" | "Virement" | "Chèque" | "Plateforme en ligne" | "Autre";
+export type PaymentMethod =
+  | "Espèces"
+  | "Carte bancaire"
+  | "Mobile Money"
+  | "Virement"
+  | "Chèque"
+  | "Plateforme en ligne"
+  | "Autre";
 
 export type JournalLine = {
   account: string;
@@ -52,7 +59,15 @@ export type TransactionTemplate = {
   helper: string;
 };
 
-export const paymentMethods: PaymentMethod[] = ["Espèces", "Carte bancaire", "Virement", "Chèque", "Plateforme en ligne", "Autre"];
+export const paymentMethods: PaymentMethod[] = [
+  "Espèces",
+  "Carte bancaire",
+  "Mobile Money",
+  "Virement",
+  "Chèque",
+  "Plateforme en ligne",
+  "Autre"
+];
 
 export const transactionTemplates: TransactionTemplate[] = [
   {

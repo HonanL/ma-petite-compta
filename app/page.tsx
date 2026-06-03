@@ -401,7 +401,7 @@ function AddTransaction({
                 value={partyName}
                 onChange={(event) => setPartyName(event.target.value)}
                 className="input"
-                placeholder="Ex: Client Dupont, Station Total"
+                placeholder="Ex: Client Dupont, Fournisseur quincaillerie"
               />
             </Field>
           </div>
@@ -658,6 +658,7 @@ function TransactionList({
                   </span>
                 ) : null}
               </div>
+              {transaction.note ? <p className="mt-2 text-sm leading-6 text-moss">Note: {transaction.note}</p> : null}
             </div>
             <div className="flex items-center gap-3 self-start">
               <p className="text-lg font-bold">{formatCurrency(transaction.amount)}</p>
