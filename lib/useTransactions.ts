@@ -98,6 +98,8 @@ export const useTransactions = () => {
       transactions,
       loaded,
       addTransaction: (transaction: Transaction) => setTransactions((current) => [transaction, ...current]),
+      updateTransaction: (transaction: Transaction) =>
+        setTransactions((current) => current.map((item) => (item.id === transaction.id ? transaction : item))),
       deleteTransaction: (id: string) => setTransactions((current) => current.filter((transaction) => transaction.id !== id)),
       clearTransactions: () => setTransactions([])
     }),

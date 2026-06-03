@@ -115,7 +115,8 @@ const lessons = [
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
-  const { transactions, loaded, addTransaction, deleteTransaction, clearTransactions } = useTransactions();
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const { transactions, loaded, addTransaction, updateTransaction, deleteTransaction, clearTransactions } = useTransactions();
   const { profile, loaded: profileLoaded, setProfile } = useBusinessProfile();
   const summary = useMemo(() => calculateSummary(transactions), [transactions]);
   const balances = useMemo(() => calculateAccountBalances(transactions), [transactions]);
@@ -129,6 +130,26 @@ export default function Home() {
     if (confirmed) {
       clearTransactions();
     }
+  };
+
+  const startEditingTransaction = (transaction: Transaction) => {
+    setEditingTransaction(transaction);
+    setTab("add");
+  };
+
+  const stopEditingTransaction = () => {
+    setEditingTransaction(null);
+  };
+
+  const saveEditedTransaction = (transaction: Transaction) => {
+    updateTransaction(transaction);
+    setEditingTransaction(null);
+    setTab("dashboard");
+  };
+
+  const startNewTransaction = () => {
+    setEditingTransaction(null);
+    setTab("add");
   };
 
   return (
@@ -154,7 +175,13 @@ export default function Home() {
                 <button
                   key={item.id}
                   type="button"
-                  onClick={() => setTab(item.id)}
+                  onClick={() => {
+                    if (item.id === "add") {
+                      startNewTransaction();
+                    } else {
+                      setTab(item.id);
+                    }
+                  }}
                   className={`flex min-h-11 items-center gap-3 px-3 py-2 text-left text-sm font-semibold transition ${
                     tab === item.id ? "bg-ink text-white" : "text-ink hover:bg-mint"
                   }`}
@@ -189,9 +216,24 @@ export default function Home() {
           ) : (
             <>
               {tab === "dashboard" && (
-                <Dashboard summary={summary} transactions={transactions} setTab={setTab} onDeleteTransaction={deleteTransaction} />
+                <Dashboard
+                  summary={summary}
+                  transactions={transactions}
+                  onCreateTransaction={startNewTransaction}
+                  onEditTransaction={startEditingTransaction}
+                  onDeleteTransaction={deleteTransaction}
+                />
               )}
-              {tab === "add" && <AddTransaction onAdd={addTransaction} businessProfile={businessProfile} />}
+              {tab === "add" && (
+                <AddTransaction
+                  key={editingTransaction?.id ?? "new"}
+                  onAdd={addTransaction}
+                  onUpdate={saveEditedTransaction}
+                  onCancelEdit={stopEditingTransaction}
+                  editingTransaction={editingTransaction}
+                  businessProfile={businessProfile}
+                />
+              )}
               {tab === "reports" && <Reports transactions={transactions} balances={balances} summary={summary} />}
               {tab === "learn" && <Learning />}
               {tab === "profile" && <BusinessProfileView profile={profile} setProfile={setProfile} />}
@@ -206,12 +248,14 @@ export default function Home() {
 function Dashboard({
   summary,
   transactions,
-  setTab,
+  onCreateTransaction,
+  onEditTransaction,
   onDeleteTransaction
 }: {
   summary: ReturnType<typeof calculateSummary>;
   transactions: Transaction[];
-  setTab: (tab: Tab) => void;
+  onCreateTransaction: () => void;
+  onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
 }) {
   const cards = [
@@ -231,7 +275,7 @@ function Dashboard({
         action={
           <button
             type="button"
-            onClick={() => setTab("add")}
+            onClick={onCreateTransaction}
             className="inline-flex min-h-11 items-center gap-2 bg-ink px-4 text-sm font-bold text-white"
             style={{ borderRadius: 6 }}
           >
@@ -268,7 +312,11 @@ function Dashboard({
             <p className="text-sm text-moss">Mois courant: {formatFrenchMonth(getMonthKey())}</p>
           </div>
         </div>
-        <TransactionList transactions={transactions.slice(0, 6)} onDeleteTransaction={onDeleteTransaction} />
+        <TransactionList
+          transactions={transactions.slice(0, 6)}
+          onEditTransaction={onEditTransaction}
+          onDeleteTransaction={onDeleteTransaction}
+        />
       </section>
     </div>
   );
@@ -288,21 +336,29 @@ function getCategoryOptions(kind: TransactionKind, businessProfile: ReturnType<t
 
 function AddTransaction({
   onAdd,
+  onUpdate,
+  onCancelEdit,
+  editingTransaction,
   businessProfile
 }: {
   onAdd: (transaction: Transaction) => void;
+  onUpdate: (transaction: Transaction) => void;
+  onCancelEdit: () => void;
+  editingTransaction: Transaction | null;
   businessProfile: ReturnType<typeof getBusinessProfileDefinition>;
 }) {
-  const [kind, setKind] = useState<TransactionKind>("client-payment");
-  const [amount, setAmount] = useState("250");
-  const [label, setLabel] = useState("Nouvelle vente");
-  const [date, setDate] = useState(formatLocalDateInput());
+  const isEditing = Boolean(editingTransaction);
+  const [kind, setKind] = useState<TransactionKind>(editingTransaction?.kind ?? "client-payment");
+  const [amount, setAmount] = useState(editingTransaction ? String(editingTransaction.amount) : "250");
+  const [label, setLabel] = useState(editingTransaction?.label ?? "Nouvelle vente");
+  const [date, setDate] = useState(editingTransaction?.date ?? formatLocalDateInput());
   const categoryOptions = useMemo(() => getCategoryOptions(kind, businessProfile), [kind, businessProfile]);
-  const [category, setCategory] = useState(categoryOptions[0] ?? "");
-  const selectedCategory = categoryOptions.includes(category) ? category : categoryOptions[0] ?? "";
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Virement");
-  const [partyName, setPartyName] = useState("");
-  const [note, setNote] = useState("");
+  const [category, setCategory] = useState(editingTransaction?.category ?? categoryOptions[0] ?? "");
+  const categoryChoices = category && !categoryOptions.includes(category) ? [category, ...categoryOptions] : categoryOptions;
+  const selectedCategory = categoryChoices.includes(category) ? category : categoryChoices[0] ?? "";
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(editingTransaction?.paymentMethod ?? "Virement");
+  const [partyName, setPartyName] = useState(editingTransaction?.partyName ?? "");
+  const [note, setNote] = useState(editingTransaction?.note ?? "");
   const preview = useMemo(
     () =>
       createTransaction({
@@ -322,7 +378,26 @@ function AddTransaction({
     event.preventDefault();
     const numericAmount = Number(amount);
     if (!numericAmount || numericAmount <= 0) return;
-    onAdd(createTransaction({ kind, amount: numericAmount, label, date, category: selectedCategory, paymentMethod, partyName, note }));
+    const nextTransaction = createTransaction({
+      kind,
+      amount: numericAmount,
+      label,
+      date,
+      category: selectedCategory,
+      paymentMethod,
+      partyName,
+      note
+    });
+
+    if (editingTransaction) {
+      onUpdate({
+        ...nextTransaction,
+        id: editingTransaction.id
+      });
+      return;
+    }
+
+    onAdd(nextTransaction);
     setLabel("");
     setAmount("");
     setCategory("");
@@ -332,7 +407,22 @@ function AddTransaction({
 
   return (
     <div className="space-y-5">
-      <Header title="Ajouter une transaction" subtitle="Choisissez un scénario; l'application prépare l'écriture comptable automatiquement." />
+      <Header
+        title={isEditing ? "Modifier la transaction" : "Ajouter une transaction"}
+        subtitle="Choisissez un scénario; l'application prépare l'écriture comptable automatiquement."
+        action={
+          isEditing ? (
+            <button
+              type="button"
+              onClick={onCancelEdit}
+              className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-4 text-sm font-bold text-ink hover:border-moss"
+              style={{ borderRadius: 6 }}
+            >
+              Annuler
+            </button>
+          ) : undefined
+        }
+      />
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <form onSubmit={submit} className="panel space-y-4 p-4">
           <div>
@@ -355,7 +445,7 @@ function AddTransaction({
             {categoryOptions.length ? (
               <>
                 <select id="category" value={selectedCategory} onChange={(event) => setCategory(event.target.value)} className="input mt-2">
-                  {categoryOptions.map((option) => (
+                  {categoryChoices.map((option) => (
                     <option key={option} value={option}>
                       {option}
                     </option>
@@ -410,7 +500,7 @@ function AddTransaction({
           </Field>
           <button type="submit" className="inline-flex min-h-11 w-full items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white" style={{ borderRadius: 6 }}>
             <CheckCircle2 size={17} aria-hidden />
-            Enregistrer la transaction
+            {isEditing ? "Enregistrer les modifications" : "Enregistrer la transaction"}
           </button>
         </form>
 
@@ -616,9 +706,11 @@ function Field({ label, id, children }: { label: string; id: string; children: R
 
 function TransactionList({
   transactions,
+  onEditTransaction,
   onDeleteTransaction
 }: {
   transactions: Transaction[];
+  onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
 }) {
   if (!transactions.length) {
@@ -662,14 +754,24 @@ function TransactionList({
             </div>
             <div className="flex items-center gap-3 self-start">
               <p className="text-lg font-bold">{formatCurrency(transaction.amount)}</p>
-              <button
-                type="button"
-                onClick={() => confirmDelete(transaction)}
-                className="inline-flex min-h-9 items-center justify-center border border-black/10 bg-white px-3 text-sm font-semibold text-clay hover:border-clay"
-                style={{ borderRadius: 6 }}
-              >
-                Supprimer
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => onEditTransaction(transaction)}
+                  className="inline-flex min-h-9 items-center justify-center border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-moss"
+                  style={{ borderRadius: 6 }}
+                >
+                  Modifier
+                </button>
+                <button
+                  type="button"
+                  onClick={() => confirmDelete(transaction)}
+                  className="inline-flex min-h-9 items-center justify-center border border-black/10 bg-white px-3 text-sm font-semibold text-clay hover:border-clay"
+                  style={{ borderRadius: 6 }}
+                >
+                  Supprimer
+                </button>
+              </div>
             </div>
           </div>
           <p className="mt-2 text-sm leading-6 text-moss">{transaction.generated.explanation}</p>
