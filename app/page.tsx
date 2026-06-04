@@ -10,12 +10,14 @@ import {
   CheckCircle2,
   ClipboardList,
   CreditCard,
+  Download,
   FileBarChart2,
   GraduationCap,
   Landmark,
   LayoutDashboard,
   PiggyBank,
   Plus,
+  Printer,
   ReceiptText,
   RotateCcw,
   Scale,
@@ -218,6 +220,69 @@ const getPeriodLabel = (period: PeriodState) => {
   return periodLabels[period.preset];
 };
 
+const escapeCsvValue = (value: string | number | undefined) => {
+  const text = String(value ?? "");
+  return `"${text.replaceAll('"', '""')}"`;
+};
+
+const getTransactionsCsvFilename = (period: PeriodState) => {
+  const range = getPeriodRange(period);
+
+  if (period.preset === "all") {
+    return "ma-petite-compta-transactions.csv";
+  }
+
+  if (period.preset === "current-month") {
+    return "ma-petite-compta-transactions-ce-mois.csv";
+  }
+
+  if (period.preset === "last-month") {
+    return "ma-petite-compta-transactions-mois-dernier.csv";
+  }
+
+  if (period.preset === "current-year") {
+    return `ma-petite-compta-transactions-${new Date().getFullYear()}.csv`;
+  }
+
+  const dates = [range.startDate, range.endDate].filter(Boolean).join("-");
+  return `ma-petite-compta-transactions${dates ? `-${dates}` : "-periode-personnalisee"}.csv`;
+};
+
+const downloadTransactionsCsv = (transactions: Transaction[], period: PeriodState) => {
+  const headers = [
+    "Date",
+    "Type de transaction",
+    "Description",
+    "Catégorie",
+    "Méthode de paiement",
+    "Client/fournisseur",
+    "Notes",
+    "Montant",
+    "Devise"
+  ];
+
+  const rows = transactions.map((transaction) => [
+    transaction.date,
+    transactionTemplates.find((template) => template.kind === transaction.kind)?.title ?? transaction.kind,
+    transaction.label,
+    transaction.category,
+    transaction.paymentMethod,
+    transaction.partyName,
+    transaction.note,
+    transaction.amount,
+    "FCFA"
+  ]);
+
+  const csv = [headers, ...rows].map((row) => row.map(escapeCsvValue).join(",")).join("\r\n");
+  const blob = new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = getTransactionsCsvFilename(period);
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -266,7 +331,7 @@ export default function Home() {
   return (
     <main className="min-h-screen">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 lg:flex-row lg:py-6">
-        <aside className="panel flex flex-col gap-5 p-4 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72">
+        <aside className="panel no-print flex flex-col gap-5 p-4 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72">
           <div>
             <div className="flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-md bg-ink text-white">
@@ -327,7 +392,13 @@ export default function Home() {
           ) : (
             <>
               {tab !== "add" && tab !== "learn" && tab !== "profile" ? (
-                <PeriodSelector period={period} setPeriod={setPeriod} periodLabel={periodLabel} />
+                <PeriodSelector
+                  period={period}
+                  setPeriod={setPeriod}
+                  periodLabel={periodLabel}
+                  transactionCount={periodTransactions.length}
+                  onExport={() => downloadTransactionsCsv(periodTransactions, period)}
+                />
               ) : null}
               {tab === "dashboard" && (
                 <Dashboard
@@ -371,14 +442,18 @@ export default function Home() {
 function PeriodSelector({
   period,
   setPeriod,
-  periodLabel
+  periodLabel,
+  transactionCount,
+  onExport
 }: {
   period: PeriodState;
   setPeriod: (period: PeriodState) => void;
   periodLabel: string;
+  transactionCount: number;
+  onExport: () => void;
 }) {
   return (
-    <section className="panel mb-5 p-4">
+    <section className="panel no-print mb-5 p-4">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-end">
         <div>
           <label className="label" htmlFor="period-preset">
@@ -426,7 +501,18 @@ function PeriodSelector({
           </div>
         ) : null}
       </div>
-      <p className="mt-3 text-sm font-semibold text-moss">Période affichée : {periodLabel}</p>
+      <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-semibold text-moss">Période affichée : {periodLabel}</p>
+        <button
+          type="button"
+          onClick={onExport}
+          className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-bold text-ink hover:border-moss"
+          style={{ borderRadius: 6 }}
+        >
+          <Download size={16} aria-hidden />
+          Exporter les transactions en CSV ({transactionCount})
+        </button>
+      </div>
     </section>
   );
 }
@@ -721,8 +807,27 @@ function Reports({
   const trialBalanceBalanced = totalDebits === totalCredits;
 
   return (
-    <div className="space-y-5">
-      <Header title="Rapports" subtitle="Trois rapports essentiels générés depuis vos écritures de journal." />
+    <div className="print-report-area space-y-5">
+      <div className="print-only">
+        <h1>Ma Petite Compta</h1>
+        <p>Rapports comptables</p>
+        <p>Période affichée : {periodLabel}</p>
+      </div>
+      <Header
+        title="Rapports"
+        subtitle="Trois rapports essentiels générés depuis vos écritures de journal."
+        action={
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="no-print inline-flex min-h-11 items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white"
+            style={{ borderRadius: 6 }}
+          >
+            <Printer size={17} aria-hidden />
+            Imprimer les rapports
+          </button>
+        }
+      />
       <p className="panel p-4 text-sm font-semibold text-moss">Période affichée : {periodLabel}</p>
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="panel p-4">

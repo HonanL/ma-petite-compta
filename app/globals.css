@@ -34,6 +34,10 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+.print-only {
+  display: none;
+}
+
 @layer components {
   .panel {
     @apply border border-black/10 bg-white/85 shadow-soft backdrop-blur;
@@ -52,5 +56,70 @@ textarea:focus-visible {
   .icon-button {
     @apply inline-flex h-10 w-10 items-center justify-center border border-black/10 bg-white text-ink transition hover:border-moss hover:text-moss;
     border-radius: 6px;
+  }
+}
+
+@media print {
+  @page {
+    margin: 14mm;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+    margin-bottom: 20px;
+  }
+
+  .print-only h1 {
+    margin: 0 0 6px;
+    font-size: 24px;
+  }
+
+  .print-only p {
+    margin: 3px 0;
+  }
+
+  main,
+  main > div {
+    min-height: auto !important;
+    max-width: none !important;
+    padding: 0 !important;
+  }
+
+  main > div {
+    display: block !important;
+  }
+
+  .print-report-area > .grid {
+    display: block !important;
+  }
+
+  .print-report-area > .grid > section {
+    margin-bottom: 20px;
+  }
+
+  .panel {
+    break-inside: avoid;
+    border: 1px solid #bbb !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  table {
+    min-width: 0 !important;
+    font-size: 10px !important;
   }
 }
