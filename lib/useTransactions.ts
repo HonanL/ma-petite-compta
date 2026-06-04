@@ -52,6 +52,22 @@ const isTransaction = (value: unknown): value is Transaction => {
   );
 };
 
+export const normalizeTransactions = (value: unknown): Transaction[] | null => {
+  if (!Array.isArray(value) || !value.every(isTransaction)) {
+    return null;
+  }
+
+  return value.map((transaction) => ({
+    ...transaction,
+    date: transaction.date ?? formatLocalDateInput(),
+    paymentMethod: transaction.paymentMethod ?? "Autre",
+    partyName: transaction.partyName ?? "",
+    category: transaction.category ?? "",
+    note: transaction.note ?? "",
+    generated: generateAccounting(transaction.kind, transaction.amount)
+  }));
+};
+
 const readStoredTransactions = () => {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -59,20 +75,7 @@ const readStoredTransactions = () => {
       return null;
     }
 
-    const parsed = JSON.parse(saved) as unknown;
-    if (!Array.isArray(parsed) || !parsed.every(isTransaction)) {
-      return [];
-    }
-
-    return parsed.map((transaction) => ({
-      ...transaction,
-      date: transaction.date ?? formatLocalDateInput(),
-      paymentMethod: transaction.paymentMethod ?? "Autre",
-      partyName: transaction.partyName ?? "",
-      category: transaction.category ?? "",
-      note: transaction.note ?? "",
-      generated: generateAccounting(transaction.kind, transaction.amount)
-    }));
+    return normalizeTransactions(JSON.parse(saved) as unknown) ?? [];
   } catch {
     return [];
   }
@@ -108,6 +111,7 @@ export const useTransactions = () => {
       addTransaction: (transaction: Transaction) => setTransactions((current) => [transaction, ...current]),
       updateTransaction: (transaction: Transaction) =>
         setTransactions((current) => current.map((item) => (item.id === transaction.id ? transaction : item))),
+      replaceTransactions: (nextTransactions: Transaction[]) => setTransactions(nextTransactions),
       deleteTransaction: (id: string) => setTransactions((current) => current.filter((transaction) => transaction.id !== id)),
       clearTransactions: () => setTransactions([])
     }),

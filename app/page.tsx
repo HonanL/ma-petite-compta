@@ -22,9 +22,10 @@ import {
   RotateCcw,
   Scale,
   ShieldCheck,
+  Upload,
   WalletCards
 } from "lucide-react";
-import { FormEvent, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
 import {
   AccountType,
   accountNormalSide,
@@ -47,6 +48,7 @@ import {
   businessProfiles,
   getBusinessProfileDefinition
 } from "@/lib/businessProfile";
+import { createBackup, getBackupFilename, parseBackup } from "@/lib/backup";
 import { useBusinessProfile } from "@/lib/useBusinessProfile";
 import { useTransactions } from "@/lib/useTransactions";
 
@@ -394,7 +396,10 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [period, setPeriod] = useState<PeriodState>({ preset: "current-month", startDate: "", endDate: "" });
-  const { transactions, loaded, addTransaction, updateTransaction, deleteTransaction, clearTransactions } = useTransactions();
+  const [backupMessage, setBackupMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const backupInputRef = useRef<HTMLInputElement>(null);
+  const { transactions, loaded, addTransaction, updateTransaction, replaceTransactions, deleteTransaction, clearTransactions } =
+    useTransactions();
   const { profile, loaded: profileLoaded, setProfile } = useBusinessProfile();
   const periodTransactions = useMemo(() => filterTransactionsByPeriod(transactions, period), [transactions, period]);
   const balanceTransactions = useMemo(() => filterTransactionsUntilPeriodEnd(transactions, period), [transactions, period]);
@@ -433,6 +438,56 @@ export default function Home() {
   const startNewTransaction = () => {
     setEditingTransaction(null);
     setTab("add");
+  };
+
+  const exportBackup = () => {
+    const backup = createBackup(transactions, profile);
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = getBackupFilename();
+    link.click();
+    URL.revokeObjectURL(url);
+    setBackupMessage({ type: "success", text: "La sauvegarde a été exportée." });
+  };
+
+  const importBackup = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const parsed = parseBackup(JSON.parse(await file.text()) as unknown);
+      if (!parsed) {
+        setBackupMessage({
+          type: "error",
+          text: "Ce fichier n'est pas une sauvegarde valide de Ma Petite Compta."
+        });
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "Importer cette sauvegarde remplacera vos données actuelles. Voulez-vous continuer ?"
+      );
+      if (!confirmed) {
+        return;
+      }
+
+      replaceTransactions(parsed.transactions);
+      setProfile(parsed.businessProfile);
+      setEditingTransaction(null);
+      setTab("dashboard");
+      setBackupMessage({ type: "success", text: "La sauvegarde a été importée avec succès." });
+    } catch {
+      setBackupMessage({
+        type: "error",
+        text: "Impossible de lire ce fichier. Vérifiez qu'il contient un JSON valide."
+      });
+    }
   };
 
   return (
@@ -490,6 +545,39 @@ export default function Home() {
               <RotateCcw size={16} aria-hidden />
               Réinitialiser
             </button>
+            <div className="mt-3 grid gap-2">
+              <button
+                type="button"
+                onClick={exportBackup}
+                className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-moss"
+                style={{ borderRadius: 6 }}
+              >
+                <Download size={16} aria-hidden />
+                Exporter une sauvegarde
+              </button>
+              <button
+                type="button"
+                onClick={() => backupInputRef.current?.click()}
+                className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-moss"
+                style={{ borderRadius: 6 }}
+              >
+                <Upload size={16} aria-hidden />
+                Importer une sauvegarde
+              </button>
+              <input
+                ref={backupInputRef}
+                type="file"
+                accept="application/json,.json"
+                onChange={importBackup}
+                className="hidden"
+                aria-label="Choisir une sauvegarde JSON"
+              />
+            </div>
+            {backupMessage ? (
+              <p className={`mt-3 text-sm font-semibold ${backupMessage.type === "error" ? "text-clay" : "text-moss"}`}>
+                {backupMessage.text}
+              </p>
+            ) : null}
           </div>
         </aside>
 
