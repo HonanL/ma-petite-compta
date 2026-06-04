@@ -59,6 +59,14 @@ type PeriodState = {
   endDate: string;
 };
 
+type QuizQuestion = {
+  type: "Type de compte" | "Débit ou crédit" | "Analyse de transaction";
+  prompt: string;
+  choices: string[];
+  correctAnswer: string;
+  explanation: string;
+};
+
 const navigation = [
   { id: "dashboard" as Tab, label: "Tableau de bord", icon: LayoutDashboard },
   { id: "add" as Tab, label: "Ajouter", icon: Plus },
@@ -125,6 +133,105 @@ const lessons = [
     title: "États financiers (Financial Statements)",
     icon: FileBarChart2,
     text: "L'état des résultats montre le bénéfice. Le bilan montre actifs, passifs et capitaux propres à une date donnée."
+  }
+];
+
+const quizQuestions: QuizQuestion[] = [
+  {
+    type: "Type de compte",
+    prompt: "Quel est le type du compte Caisse ?",
+    choices: ["Actif", "Passif", "Capitaux propres", "Revenu", "Dépense"],
+    correctAnswer: "Actif",
+    explanation: "Caisse représente l'argent disponible de l'entreprise. C'est donc un actif."
+  },
+  {
+    type: "Type de compte",
+    prompt: "Quel est le type du compte Comptes fournisseurs ?",
+    choices: ["Actif", "Passif", "Capitaux propres", "Revenu", "Dépense"],
+    correctAnswer: "Passif",
+    explanation: "Les comptes fournisseurs représentent des montants que l'entreprise doit payer. C'est un passif."
+  },
+  {
+    type: "Type de compte",
+    prompt: "Quel est le type du compte Revenus de service ?",
+    choices: ["Actif", "Passif", "Capitaux propres", "Revenu", "Dépense"],
+    correctAnswer: "Revenu",
+    explanation: "Les revenus de service sont gagnés lorsque l'entreprise réalise un travail pour un client."
+  },
+  {
+    type: "Type de compte",
+    prompt: "Quel est le type du compte Dépense de carburant ?",
+    choices: ["Actif", "Passif", "Capitaux propres", "Revenu", "Dépense"],
+    correctAnswer: "Dépense",
+    explanation: "Le carburant utilisé pour travailler est un coût de l'entreprise. C'est une dépense."
+  },
+  {
+    type: "Type de compte",
+    prompt: "Quel est le type du compte Capital du propriétaire ?",
+    choices: ["Actif", "Passif", "Capitaux propres", "Revenu", "Dépense"],
+    correctAnswer: "Capitaux propres",
+    explanation: "Le capital représente la part investie par le propriétaire dans l'entreprise."
+  },
+  {
+    type: "Débit ou crédit",
+    prompt: "La Caisse augmente. Quel côté augmente ?",
+    choices: ["Débit", "Crédit"],
+    correctAnswer: "Débit",
+    explanation: "Caisse est un actif. Quand un actif augmente, on le débite."
+  },
+  {
+    type: "Débit ou crédit",
+    prompt: "Une dette bancaire augmente. Quel côté augmente ?",
+    choices: ["Débit", "Crédit"],
+    correctAnswer: "Crédit",
+    explanation: "Une dette bancaire est un passif. Quand un passif augmente, on le crédite."
+  },
+  {
+    type: "Débit ou crédit",
+    prompt: "Les revenus de service augmentent. Quel côté augmente ?",
+    choices: ["Débit", "Crédit"],
+    correctAnswer: "Crédit",
+    explanation: "Les revenus augmentent normalement au crédit."
+  },
+  {
+    type: "Débit ou crédit",
+    prompt: "Une dépense de publicité augmente. Quel côté augmente ?",
+    choices: ["Débit", "Crédit"],
+    correctAnswer: "Débit",
+    explanation: "Les dépenses augmentent normalement au débit."
+  },
+  {
+    type: "Analyse de transaction",
+    prompt: "Un client paie 25 000 FCFA pour un service. Quelle écriture est correcte ?",
+    choices: [
+      "Débit Caisse 25 000 FCFA / Crédit Revenus de service 25 000 FCFA",
+      "Débit Revenus de service 25 000 FCFA / Crédit Caisse 25 000 FCFA",
+      "Débit Caisse 25 000 FCFA / Crédit Capital du propriétaire 25 000 FCFA"
+    ],
+    correctAnswer: "Débit Caisse 25 000 FCFA / Crédit Revenus de service 25 000 FCFA",
+    explanation: "L'argent reçu augmente la Caisse au débit, et le service gagné augmente les revenus au crédit."
+  },
+  {
+    type: "Analyse de transaction",
+    prompt: "L'entreprise paie 5 000 FCFA d'essence. Quelle écriture est correcte ?",
+    choices: [
+      "Débit Dépense de carburant 5 000 FCFA / Crédit Caisse 5 000 FCFA",
+      "Débit Caisse 5 000 FCFA / Crédit Dépense de carburant 5 000 FCFA",
+      "Débit Fournitures 5 000 FCFA / Crédit Comptes fournisseurs 5 000 FCFA"
+    ],
+    correctAnswer: "Débit Dépense de carburant 5 000 FCFA / Crédit Caisse 5 000 FCFA",
+    explanation: "La dépense de carburant augmente au débit et la Caisse diminue au crédit."
+  },
+  {
+    type: "Analyse de transaction",
+    prompt: "Le propriétaire investit 100 000 FCFA. Quelle écriture est correcte ?",
+    choices: [
+      "Débit Caisse 100 000 FCFA / Crédit Capital du propriétaire 100 000 FCFA",
+      "Débit Capital du propriétaire 100 000 FCFA / Crédit Caisse 100 000 FCFA",
+      "Débit Caisse 100 000 FCFA / Crédit Revenus de service 100 000 FCFA"
+    ],
+    correctAnswer: "Débit Caisse 100 000 FCFA / Crédit Capital du propriétaire 100 000 FCFA",
+    explanation: "L'investissement augmente la Caisse au débit et le capital du propriétaire au crédit."
   }
 ];
 
@@ -898,6 +1005,36 @@ function Reports({
 }
 
 function Learning() {
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [correctAnswers, setCorrectAnswers] = useState(0);
+  const [answeredQuestions, setAnsweredQuestions] = useState(0);
+  const question = quizQuestions[questionIndex];
+  const hasAnswered = selectedAnswer !== null;
+  const isCorrect = selectedAnswer === question.correctAnswer;
+  const successRate = answeredQuestions ? Math.round((correctAnswers / answeredQuestions) * 100) : 0;
+
+  const answerQuestion = (answer: string) => {
+    if (hasAnswered) return;
+    setSelectedAnswer(answer);
+    setAnsweredQuestions((current) => current + 1);
+    if (answer === question.correctAnswer) {
+      setCorrectAnswers((current) => current + 1);
+    }
+  };
+
+  const nextQuestion = () => {
+    setQuestionIndex((current) => (current + 1) % quizQuestions.length);
+    setSelectedAnswer(null);
+  };
+
+  const restartQuiz = () => {
+    setQuestionIndex(0);
+    setSelectedAnswer(null);
+    setCorrectAnswers(0);
+    setAnsweredQuestions(0);
+  };
+
   return (
     <div className="space-y-5">
       <Header title="Mode apprentissage" subtitle="Des leçons courtes pour comprendre ce que chaque transaction fait à vos comptes." />
@@ -917,6 +1054,91 @@ function Learning() {
           );
         })}
       </div>
+
+      <section className="panel p-4 sm:p-5">
+        <div className="flex flex-col gap-4 border-b border-black/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="label">Quiz comptable</p>
+            <h2 className="mt-1 text-xl font-bold">Pratiquez les bases</h2>
+            <p className="mt-2 text-sm text-moss">
+              Question {questionIndex + 1} sur {quizQuestions.length} · {question.type}
+            </p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <ScoreItem label="Bonnes réponses" value={correctAnswers} />
+            <ScoreItem label="Répondues" value={answeredQuestions} />
+            <ScoreItem label="Réussite" value={`${successRate}%`} />
+          </div>
+        </div>
+
+        <div className="py-5">
+          <h3 className="text-lg font-bold leading-7">{question.prompt}</h3>
+          <div className="mt-4 grid gap-3">
+            {question.choices.map((choice) => {
+              const choiceIsCorrect = choice === question.correctAnswer;
+              const choiceIsSelected = choice === selectedAnswer;
+              const answerClass = hasAnswered
+                ? choiceIsCorrect
+                  ? "border-moss bg-mint text-ink"
+                  : choiceIsSelected
+                    ? "border-clay bg-white text-clay"
+                    : "border-black/10 bg-white text-moss"
+                : "border-black/10 bg-white text-ink hover:border-moss hover:bg-mint";
+
+              return (
+                <button
+                  key={choice}
+                  type="button"
+                  onClick={() => answerQuestion(choice)}
+                  disabled={hasAnswered}
+                  className={`min-h-12 border px-4 py-3 text-left text-sm font-semibold transition ${answerClass}`}
+                  style={{ borderRadius: 6 }}
+                >
+                  {choice}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {hasAnswered ? (
+          <div className={`border p-4 ${isCorrect ? "border-moss bg-mint" : "border-clay bg-white"}`} style={{ borderRadius: 8 }}>
+            <p className={`font-bold ${isCorrect ? "text-ink" : "text-clay"}`}>
+              {isCorrect ? "Correct." : `Incorrect. La bonne réponse est : ${question.correctAnswer}`}
+            </p>
+            <p className="mt-2 text-sm leading-6 text-moss">{question.explanation}</p>
+          </div>
+        ) : null}
+
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:justify-between">
+          <button
+            type="button"
+            onClick={restartQuiz}
+            className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-4 text-sm font-bold text-ink hover:border-moss"
+            style={{ borderRadius: 6 }}
+          >
+            Recommencer le quiz
+          </button>
+          <button
+            type="button"
+            onClick={nextQuestion}
+            disabled={!hasAnswered}
+            className="inline-flex min-h-10 items-center justify-center bg-ink px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
+            style={{ borderRadius: 6 }}
+          >
+            Question suivante
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ScoreItem({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="min-w-20 border border-black/10 bg-white px-2 py-2" style={{ borderRadius: 6 }}>
+      <p className="text-lg font-bold text-ink">{value}</p>
+      <p className="text-[10px] font-semibold uppercase leading-4 text-moss">{label}</p>
     </div>
   );
 }
