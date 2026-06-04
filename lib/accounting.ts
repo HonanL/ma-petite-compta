@@ -314,9 +314,9 @@ export const calculateAccountBalances = (transactions: Transaction[]) => {
   return Array.from(balances.values()).sort((a, b) => a.account.localeCompare(b.account, "fr"));
 };
 
-export const calculateSummary = (transactions: Transaction[], monthKey = getMonthKey()) => {
+export const calculateSummary = (transactions: Transaction[], monthKey: string | null = getMonthKey()) => {
   const balances = calculateAccountBalances(transactions);
-  const monthly = transactions.filter((transaction) => transaction.date.startsWith(monthKey));
+  const monthly = monthKey ? transactions.filter((transaction) => transaction.date.startsWith(monthKey)) : transactions;
   const monthlyLines = monthly.flatMap((transaction) => transaction.generated.journal);
 
   const revenue = sum(

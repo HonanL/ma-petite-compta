@@ -32,9 +32,7 @@ import {
   createTransaction,
   formatCurrency,
   formatFrenchDate,
-  formatFrenchMonth,
   formatLocalDateInput,
-  getMonthKey,
   PaymentMethod,
   paymentMethods,
   sum,
@@ -51,6 +49,13 @@ import { useBusinessProfile } from "@/lib/useBusinessProfile";
 import { useTransactions } from "@/lib/useTransactions";
 
 type Tab = "dashboard" | "add" | "reports" | "learn" | "profile";
+type PeriodPreset = "all" | "current-month" | "last-month" | "current-year" | "custom";
+
+type PeriodState = {
+  preset: PeriodPreset;
+  startDate: string;
+  endDate: string;
+};
 
 const navigation = [
   { id: "dashboard" as Tab, label: "Tableau de bord", icon: LayoutDashboard },
@@ -59,6 +64,14 @@ const navigation = [
   { id: "learn" as Tab, label: "Apprentissage", icon: GraduationCap },
   { id: "profile" as Tab, label: "Profil d'entreprise", icon: BriefcaseBusiness }
 ];
+
+const periodLabels: Record<PeriodPreset, string> = {
+  all: "Toutes les transactions",
+  "current-month": "Ce mois-ci",
+  "last-month": "Mois dernier",
+  "current-year": "Cette année",
+  custom: "Période personnalisée"
+};
 
 const lessons = [
   {
@@ -113,13 +126,111 @@ const lessons = [
   }
 ];
 
+const getPeriodRange = (period: PeriodState) => {
+  const today = new Date();
+
+  if (period.preset === "current-month") {
+    return {
+      startDate: formatLocalDateInput(new Date(today.getFullYear(), today.getMonth(), 1)),
+      endDate: formatLocalDateInput(new Date(today.getFullYear(), today.getMonth() + 1, 0))
+    };
+  }
+
+  if (period.preset === "last-month") {
+    return {
+      startDate: formatLocalDateInput(new Date(today.getFullYear(), today.getMonth() - 1, 1)),
+      endDate: formatLocalDateInput(new Date(today.getFullYear(), today.getMonth(), 0))
+    };
+  }
+
+  if (period.preset === "current-year") {
+    return {
+      startDate: formatLocalDateInput(new Date(today.getFullYear(), 0, 1)),
+      endDate: formatLocalDateInput(new Date(today.getFullYear(), 11, 31))
+    };
+  }
+
+  if (period.preset === "custom") {
+    return {
+      startDate: period.startDate,
+      endDate: period.endDate
+    };
+  }
+
+  return {
+    startDate: "",
+    endDate: ""
+  };
+};
+
+const hasUsableDate = (transaction: Transaction) => /^\d{4}-\d{2}-\d{2}$/.test(transaction.date);
+
+const filterTransactionsByPeriod = (transactions: Transaction[], period: PeriodState) => {
+  const range = getPeriodRange(period);
+
+  if (period.preset === "all") {
+    return transactions;
+  }
+
+  return transactions.filter((transaction) => {
+    if (!hasUsableDate(transaction)) {
+      return false;
+    }
+
+    const afterStart = range.startDate ? transaction.date >= range.startDate : true;
+    const beforeEnd = range.endDate ? transaction.date <= range.endDate : true;
+
+    return afterStart && beforeEnd;
+  });
+};
+
+const filterTransactionsUntilPeriodEnd = (transactions: Transaction[], period: PeriodState) => {
+  const { endDate } = getPeriodRange(period);
+
+  if (period.preset === "all" || !endDate) {
+    return transactions;
+  }
+
+  return transactions.filter((transaction) => hasUsableDate(transaction) && transaction.date <= endDate);
+};
+
+const getPeriodLabel = (period: PeriodState) => {
+  const range = getPeriodRange(period);
+
+  if (period.preset === "custom") {
+    if (range.startDate && range.endDate) {
+      return `${periodLabels.custom} : du ${formatFrenchDate(range.startDate)} au ${formatFrenchDate(range.endDate)}`;
+    }
+
+    if (range.startDate) {
+      return `${periodLabels.custom} : depuis le ${formatFrenchDate(range.startDate)}`;
+    }
+
+    if (range.endDate) {
+      return `${periodLabels.custom} : jusqu'au ${formatFrenchDate(range.endDate)}`;
+    }
+  }
+
+  if (period.preset !== "all" && range.startDate && range.endDate) {
+    return `${periodLabels[period.preset]} : du ${formatFrenchDate(range.startDate)} au ${formatFrenchDate(range.endDate)}`;
+  }
+
+  return periodLabels[period.preset];
+};
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [period, setPeriod] = useState<PeriodState>({ preset: "current-month", startDate: "", endDate: "" });
   const { transactions, loaded, addTransaction, updateTransaction, deleteTransaction, clearTransactions } = useTransactions();
   const { profile, loaded: profileLoaded, setProfile } = useBusinessProfile();
-  const summary = useMemo(() => calculateSummary(transactions), [transactions]);
-  const balances = useMemo(() => calculateAccountBalances(transactions), [transactions]);
+  const periodTransactions = useMemo(() => filterTransactionsByPeriod(transactions, period), [transactions, period]);
+  const balanceTransactions = useMemo(() => filterTransactionsUntilPeriodEnd(transactions, period), [transactions, period]);
+  const summary = useMemo(() => calculateSummary(periodTransactions, null), [periodTransactions]);
+  const periodBalances = useMemo(() => calculateAccountBalances(periodTransactions), [periodTransactions]);
+  const balanceBalances = useMemo(() => calculateAccountBalances(balanceTransactions), [balanceTransactions]);
+  const balanceSummary = useMemo(() => calculateSummary(balanceTransactions, null), [balanceTransactions]);
+  const periodLabel = getPeriodLabel(period);
   const businessProfile = getBusinessProfileDefinition(profile);
 
   const confirmClearTransactions = () => {
@@ -215,10 +326,14 @@ export default function Home() {
             <div className="panel p-8">Chargement...</div>
           ) : (
             <>
+              {tab !== "add" && tab !== "learn" && tab !== "profile" ? (
+                <PeriodSelector period={period} setPeriod={setPeriod} periodLabel={periodLabel} />
+              ) : null}
               {tab === "dashboard" && (
                 <Dashboard
                   summary={summary}
-                  transactions={transactions}
+                  transactions={periodTransactions}
+                  periodLabel={periodLabel}
                   onCreateTransaction={startNewTransaction}
                   onEditTransaction={startEditingTransaction}
                   onDeleteTransaction={deleteTransaction}
@@ -234,7 +349,15 @@ export default function Home() {
                   businessProfile={businessProfile}
                 />
               )}
-              {tab === "reports" && <Reports transactions={transactions} balances={balances} summary={summary} />}
+              {tab === "reports" && (
+                <Reports
+                  transactions={periodTransactions}
+                  periodBalances={periodBalances}
+                  balanceBalances={balanceBalances}
+                  balanceSummary={balanceSummary}
+                  periodLabel={periodLabel}
+                />
+              )}
               {tab === "learn" && <Learning />}
               {tab === "profile" && <BusinessProfileView profile={profile} setProfile={setProfile} />}
             </>
@@ -245,26 +368,91 @@ export default function Home() {
   );
 }
 
+function PeriodSelector({
+  period,
+  setPeriod,
+  periodLabel
+}: {
+  period: PeriodState;
+  setPeriod: (period: PeriodState) => void;
+  periodLabel: string;
+}) {
+  return (
+    <section className="panel mb-5 p-4">
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-end">
+        <div>
+          <label className="label" htmlFor="period-preset">
+            Période
+          </label>
+          <select
+            id="period-preset"
+            value={period.preset}
+            onChange={(event) =>
+              setPeriod({
+                ...period,
+                preset: event.target.value as PeriodPreset
+              })
+            }
+            className="input mt-2"
+          >
+            {Object.entries(periodLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {period.preset === "custom" ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Date de début" id="period-start">
+              <input
+                id="period-start"
+                type="date"
+                value={period.startDate}
+                onChange={(event) => setPeriod({ ...period, startDate: event.target.value })}
+                className="input"
+              />
+            </Field>
+            <Field label="Date de fin" id="period-end">
+              <input
+                id="period-end"
+                type="date"
+                value={period.endDate}
+                onChange={(event) => setPeriod({ ...period, endDate: event.target.value })}
+                className="input"
+              />
+            </Field>
+          </div>
+        ) : null}
+      </div>
+      <p className="mt-3 text-sm font-semibold text-moss">Période affichée : {periodLabel}</p>
+    </section>
+  );
+}
+
 function Dashboard({
   summary,
   transactions,
+  periodLabel,
   onCreateTransaction,
   onEditTransaction,
   onDeleteTransaction
 }: {
   summary: ReturnType<typeof calculateSummary>;
   transactions: Transaction[];
+  periodLabel: string;
   onCreateTransaction: () => void;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
 }) {
   const cards = [
-    { label: "Argent disponible", english: "Cash Available", value: summary.cash, icon: Banknote },
-    { label: "Revenus du mois", english: "Monthly Revenue", value: summary.revenue, icon: ArrowUpRight },
-    { label: "Dépenses du mois", english: "Monthly Expenses", value: summary.expenses, icon: ArrowDownRight },
-    { label: "Bénéfice net", english: "Net Income", value: summary.netIncome, icon: Scale },
-    { label: "Dettes", english: "Liabilities", value: summary.liabilities, icon: Landmark },
-    { label: "Capitaux propres", english: "Equity", value: summary.equity, icon: Building2 }
+    { label: "Argent sur la période", english: "Period Cash", value: summary.cash, icon: Banknote },
+    { label: "Revenus de la période", english: "Period Revenue", value: summary.revenue, icon: ArrowUpRight },
+    { label: "Dépenses de la période", english: "Period Expenses", value: summary.expenses, icon: ArrowDownRight },
+    { label: "Bénéfice net de la période", english: "Period Net Income", value: summary.netIncome, icon: Scale },
+    { label: "Dettes de la période", english: "Period Liabilities", value: summary.liabilities, icon: Landmark },
+    { label: "Capitaux propres de la période", english: "Period Equity", value: summary.equity, icon: Building2 }
   ];
 
   return (
@@ -309,7 +497,7 @@ function Dashboard({
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold">Dernières transactions</h2>
-            <p className="text-sm text-moss">Mois courant: {formatFrenchMonth(getMonthKey())}</p>
+            <p className="text-sm text-moss">Période affichée : {periodLabel}</p>
           </div>
         </div>
         <TransactionList
@@ -512,25 +700,30 @@ function AddTransaction({
 
 function Reports({
   transactions,
-  balances,
-  summary
+  periodBalances,
+  balanceBalances,
+  balanceSummary,
+  periodLabel
 }: {
   transactions: Transaction[];
-  balances: ReturnType<typeof calculateAccountBalances>;
-  summary: ReturnType<typeof calculateSummary>;
+  periodBalances: ReturnType<typeof calculateAccountBalances>;
+  balanceBalances: ReturnType<typeof calculateAccountBalances>;
+  balanceSummary: ReturnType<typeof calculateSummary>;
+  periodLabel: string;
 }) {
-  const revenue = sum(balances.filter((line) => line.accountType === "revenu").map((line) => line.balance));
-  const expenses = sum(balances.filter((line) => line.accountType === "dépense").map((line) => line.balance));
-  const assets = balances.filter((line) => line.accountType === "actif");
-  const liabilities = balances.filter((line) => line.accountType === "passif");
-  const equity = balances.filter((line) => line.accountType === "capitaux propres");
-  const totalDebits = sum(balances.map((line) => line.debit));
-  const totalCredits = sum(balances.map((line) => line.credit));
+  const revenue = sum(periodBalances.filter((line) => line.accountType === "revenu").map((line) => line.balance));
+  const expenses = sum(periodBalances.filter((line) => line.accountType === "dépense").map((line) => line.balance));
+  const assets = balanceBalances.filter((line) => line.accountType === "actif");
+  const liabilities = balanceBalances.filter((line) => line.accountType === "passif");
+  const equity = balanceBalances.filter((line) => line.accountType === "capitaux propres");
+  const totalDebits = sum(periodBalances.map((line) => line.debit));
+  const totalCredits = sum(periodBalances.map((line) => line.credit));
   const trialBalanceBalanced = totalDebits === totalCredits;
 
   return (
     <div className="space-y-5">
       <Header title="Rapports" subtitle="Trois rapports essentiels générés depuis vos écritures de journal." />
+      <p className="panel p-4 text-sm font-semibold text-moss">Période affichée : {periodLabel}</p>
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="panel p-4">
           <ReportTitle title="État des résultats" english="Income Statement" />
@@ -542,13 +735,13 @@ function Reports({
         <section className="panel p-4">
           <ReportTitle title="Bilan" english="Balance Sheet" />
           <ReportGroup title="Actifs (Assets)" lines={assets} />
-          <ReportLine label="Total actifs (Total Assets)" value={summary.assets} strong />
+          <ReportLine label="Total actifs (Total Assets)" value={balanceSummary.assets} strong />
           <ReportGroup title="Passifs (Liabilities)" lines={liabilities} />
-          <ReportLine label="Total passifs (Total Liabilities)" value={summary.liabilities} strong />
+          <ReportLine label="Total passifs (Total Liabilities)" value={balanceSummary.liabilities} strong />
           <ReportGroup title="Capitaux propres (Equity)" lines={equity} />
-          <ReportLine label="Bénéfices non répartis (Retained Earnings)" value={summary.retainedEarnings} />
-          <ReportLine label="Total capitaux propres (Total Equity)" value={summary.equity} strong />
-          <ReportLine label="Passifs + capitaux propres" value={summary.liabilities + summary.equity} strong />
+          <ReportLine label="Bénéfices non répartis (Retained Earnings)" value={balanceSummary.retainedEarnings} />
+          <ReportLine label="Total capitaux propres (Total Equity)" value={balanceSummary.equity} strong />
+          <ReportLine label="Passifs + capitaux propres" value={balanceSummary.liabilities + balanceSummary.equity} strong />
         </section>
       </div>
 
@@ -566,7 +759,7 @@ function Reports({
               </tr>
             </thead>
             <tbody>
-              {balances.map((line) => (
+              {periodBalances.map((line) => (
                 <tr key={line.account} className="border-b border-black/5">
                   <td className="py-3 pr-3 font-semibold">{line.account}</td>
                   <td className="py-3 pr-3">{accountTypeLabels[line.accountType]}</td>

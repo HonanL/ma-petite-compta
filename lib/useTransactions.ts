@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { PaymentMethod, Transaction, TransactionKind, generateAccounting, paymentMethods } from "@/lib/accounting";
+import {
+  PaymentMethod,
+  Transaction,
+  TransactionKind,
+  formatLocalDateInput,
+  generateAccounting,
+  paymentMethods
+} from "@/lib/accounting";
 
 const STORAGE_KEY = "ma-petite-compta-transactions";
 
@@ -30,7 +37,7 @@ const isTransaction = (value: unknown): value is Transaction => {
 
   return (
     typeof candidate.id === "string" &&
-    isValidDateInput(candidate.date) &&
+    (candidate.date === undefined || isValidDateInput(candidate.date)) &&
     typeof candidate.label === "string" &&
     candidate.label.trim().length > 0 &&
     typeof candidate.amount === "number" &&
@@ -59,6 +66,7 @@ const readStoredTransactions = () => {
 
     return parsed.map((transaction) => ({
       ...transaction,
+      date: transaction.date ?? formatLocalDateInput(),
       paymentMethod: transaction.paymentMethod ?? "Autre",
       partyName: transaction.partyName ?? "",
       category: transaction.category ?? "",
