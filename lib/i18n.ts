@@ -16,9 +16,11 @@ export const translations = {
     nav: {
       dashboard: "Tableau de bord",
       add: "Ajouter",
+      transactions: "Transactions",
       reports: "Rapports",
       learn: "Apprentissage",
-      profile: "Profil d'entreprise"
+      profile: "Profil d'entreprise",
+      settings: "Paramètres"
     },
     actions: {
       newTransaction: "Nouvelle transaction",
@@ -202,9 +204,11 @@ export const translations = {
     nav: {
       dashboard: "Dashboard",
       add: "Add",
+      transactions: "Transactions",
       reports: "Reports",
       learn: "Learn",
-      profile: "Business profile"
+      profile: "Business profile",
+      settings: "Settings"
     },
     actions: {
       newTransaction: "New transaction",
