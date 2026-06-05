@@ -667,14 +667,14 @@ export default function Home() {
 
   return (
     <main className="min-h-screen">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-5 px-4 py-4 sm:px-6 lg:flex-row lg:py-6">
-        <aside className="panel no-print flex flex-col gap-5 p-4 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72">
+      <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-3 py-3 sm:px-6 lg:flex-row lg:gap-5 lg:py-6">
+        <aside className="panel no-print flex flex-col gap-4 p-3 sm:p-4 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72">
           <div>
-            <div className="flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-md bg-ink text-white">
+            <div className="flex items-center justify-between gap-3 lg:items-start lg:justify-start">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-ink text-white">
                 <BadgeEuro size={23} aria-hidden />
               </div>
-              <div>
+              <div className="min-w-0 flex-1">
                 <h1 className="text-xl font-bold text-ink">{ui.appName}</h1>
                 <p className="text-xs text-moss">{ui.appSubtitle}</p>
               </div>
@@ -697,7 +697,7 @@ export default function Home() {
             </div>
           </div>
 
-          <nav className="grid gap-2">
+          <nav className="grid grid-cols-5 gap-1 sm:gap-2 lg:grid-cols-1">
             {navigation.map((item) => {
               const Icon = item.icon;
               return (
@@ -711,13 +711,13 @@ export default function Home() {
                       setTab(item.id);
                     }
                   }}
-                  className={`flex min-h-11 items-center gap-3 px-3 py-2 text-left text-sm font-semibold transition ${
+                  className={`flex min-h-14 flex-col items-center justify-center gap-1 px-2 py-2 text-center text-[11px] font-semibold leading-tight transition sm:min-h-11 sm:flex-row sm:justify-start sm:gap-3 sm:px-3 sm:text-left sm:text-sm ${
                     tab === item.id ? "bg-ink text-white" : "text-ink hover:bg-mint"
                   }`}
                   style={{ borderRadius: 6 }}
                 >
-                  <Icon size={18} aria-hidden />
-                  {ui.nav[item.id]}
+                  <Icon className="shrink-0" size={18} aria-hidden />
+                  <span className="line-clamp-2">{ui.nav[item.id]}</span>
                 </button>
               );
             })}
@@ -730,8 +730,7 @@ export default function Home() {
             <button
               type="button"
               onClick={confirmClearTransactions}
-              className="mt-3 inline-flex min-h-10 items-center gap-2 border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-clay hover:text-clay"
-              style={{ borderRadius: 6 }}
+              className="button-danger mt-3 w-full justify-center lg:w-auto"
             >
               <RotateCcw size={16} aria-hidden />
               {ui.actions.reset}
@@ -740,8 +739,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={exportBackup}
-                className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-moss"
-                style={{ borderRadius: 6 }}
+                className="button-secondary px-3"
               >
                 <Download size={16} aria-hidden />
                 {ui.actions.exportBackup}
@@ -749,8 +747,7 @@ export default function Home() {
               <button
                 type="button"
                 onClick={() => backupInputRef.current?.click()}
-                className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-moss"
-                style={{ borderRadius: 6 }}
+                className="button-secondary px-3"
               >
                 <Upload size={16} aria-hidden />
                 {ui.actions.importBackup}
@@ -854,7 +851,7 @@ function PeriodSelector({
   ui: AppTranslations;
 }) {
   return (
-    <section className="panel no-print mb-5 p-4">
+    <section className="panel no-print mb-5 p-4 sm:p-5">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-end">
         <div>
           <label className="label" htmlFor="period-preset">
@@ -911,8 +908,7 @@ function PeriodSelector({
         <button
           type="button"
           onClick={onExport}
-          className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-bold text-ink hover:border-moss"
-          style={{ borderRadius: 6 }}
+          className="button-secondary w-full sm:w-auto"
         >
           <Download size={16} aria-hidden />
           {ui.actions.exportCsv} ({transactionCount})
@@ -954,12 +950,12 @@ function Dashboard({
   language: Language;
 }) {
   const cards = [
-    { label: ui.dashboard.cash, value: summary.cash, icon: Banknote },
-    { label: ui.dashboard.revenue, value: summary.revenue, icon: ArrowUpRight },
-    { label: ui.dashboard.expenses, value: summary.expenses, icon: ArrowDownRight },
-    { label: ui.dashboard.netIncome, value: summary.netIncome, icon: Scale },
-    { label: ui.dashboard.liabilities, value: summary.liabilities, icon: Landmark },
-    { label: ui.dashboard.equity, value: summary.equity, icon: Building2 }
+    { label: ui.dashboard.cash, value: summary.cash, icon: Banknote, tone: "bg-ink text-white" },
+    { label: ui.dashboard.revenue, value: summary.revenue, icon: ArrowUpRight, tone: "bg-mint text-ink" },
+    { label: ui.dashboard.expenses, value: summary.expenses, icon: ArrowDownRight, tone: "bg-white text-clay" },
+    { label: ui.dashboard.netIncome, value: summary.netIncome, icon: Scale, tone: "bg-mint text-ink" },
+    { label: ui.dashboard.liabilities, value: summary.liabilities, icon: Landmark, tone: "bg-white text-ink" },
+    { label: ui.dashboard.equity, value: summary.equity, icon: Building2, tone: "bg-white text-ink" }
   ];
 
   return (
@@ -972,14 +968,32 @@ function Dashboard({
           <button
             type="button"
             onClick={onCreateTransaction}
-            className="inline-flex min-h-11 items-center gap-2 bg-ink px-4 text-sm font-bold text-white"
-            style={{ borderRadius: 6 }}
+            className="button-primary w-full sm:w-auto"
           >
             <Plus size={17} aria-hidden />
             {ui.actions.newTransaction}
           </button>
         }
       />
+
+      <section className="panel overflow-hidden p-5 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="label">{ui.appName}</p>
+            <h2 className="mt-2 max-w-3xl text-2xl font-bold leading-tight text-ink sm:text-4xl">{ui.heroTagline}</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:min-w-48">
+            <button type="button" onClick={onCreateTransaction} className="button-primary px-3">
+              <Plus size={17} aria-hidden />
+              {ui.nav.add}
+            </button>
+            <button type="button" onClick={onOpenReports} className="button-secondary px-3">
+              <FileBarChart2 size={17} aria-hidden />
+              {ui.nav.reports}
+            </button>
+          </div>
+        </div>
+      </section>
 
       {!hasTransactions ? (
         <Onboarding
@@ -999,8 +1013,7 @@ function Dashboard({
             <button
               type="button"
               onClick={onAddSamples}
-              className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-bold text-ink hover:border-moss"
-              style={{ borderRadius: 6 }}
+              className="button-secondary px-3"
             >
               {ui.actions.addSamples}
             </button>
@@ -1008,8 +1021,7 @@ function Dashboard({
               <button
                 type="button"
                 onClick={onRemoveSamples}
-                className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-3 text-sm font-bold text-clay hover:border-clay"
-                style={{ borderRadius: 6 }}
+                className="button-danger px-3"
               >
                 {ui.actions.removeSamples}
               </button>
@@ -1018,26 +1030,26 @@ function Dashboard({
         </section>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 xl:grid-cols-3">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
-            <article key={card.label} className="panel p-4">
+            <article key={card.label} className="panel p-4 sm:p-5">
               <div className="flex items-start justify-between gap-3">
-                <div>
+                <div className="min-w-0">
                   <p className="label">{card.label}</p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-mint text-ink">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-black/10 ${card.tone}`}>
                   <Icon size={20} aria-hidden />
                 </div>
               </div>
-              <p className="mt-4 text-2xl font-bold text-ink">{formatCurrency(card.value)}</p>
+              <p className="mt-5 text-2xl font-bold tracking-normal text-ink sm:text-3xl">{formatCurrency(card.value)}</p>
             </article>
           );
         })}
       </div>
 
-      <section className="panel p-4">
+      <section className="panel p-4 sm:p-5">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold">{ui.dashboard.recent}</h2>
@@ -1107,8 +1119,7 @@ function Onboarding({
         <button
           type="button"
           onClick={onAddSamples}
-          className="inline-flex min-h-11 items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white"
-          style={{ borderRadius: 6 }}
+          className="button-primary"
         >
           {ui.actions.addSamples}
         </button>
@@ -1118,7 +1129,7 @@ function Onboarding({
         {steps.map((step) => {
           const Icon = step.icon;
           return (
-            <article key={step.title} className="border border-black/10 bg-white p-4" style={{ borderRadius: 8 }}>
+            <article key={step.title} className="soft-card">
               <div className="flex h-10 w-10 items-center justify-center rounded-md bg-mint text-ink">
                 <Icon size={19} aria-hidden />
               </div>
@@ -1127,8 +1138,7 @@ function Onboarding({
               <button
                 type="button"
                 onClick={step.action}
-                className="mt-4 inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-3 text-sm font-bold text-ink hover:border-moss"
-                style={{ borderRadius: 6 }}
+                className="button-secondary mt-4 w-full px-3"
               >
                 {step.button}
               </button>
@@ -1239,8 +1249,7 @@ function AddTransaction({
             <button
               type="button"
               onClick={onCancelEdit}
-              className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-4 text-sm font-bold text-ink hover:border-moss"
-              style={{ borderRadius: 6 }}
+              className="button-secondary w-full sm:w-auto"
             >
               {ui.actions.cancel}
             </button>
@@ -1248,87 +1257,97 @@ function AddTransaction({
         }
       />
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <form onSubmit={submit} className="panel space-y-4 p-4">
-          <div>
-            <label className="label" htmlFor="kind">
-              {ui.add.type}
-            </label>
-            <select id="kind" value={kind} onChange={(event) => setKind(event.target.value as TransactionKind)} className="input mt-2">
-              {transactionTemplates.map((template) => (
-                <option key={template.kind} value={template.kind}>
-                  {transactionKindLabels[template.kind][language]}
-                </option>
-              ))}
-            </select>
-            <p className="mt-2 text-sm text-moss">
-              {language === "fr"
-                ? transactionTemplates.find((template) => template.kind === kind)?.helper
-                : transactionTemplates.find((template) => template.kind === kind)?.english}
-            </p>
-          </div>
-          <div>
-            <label className="label" htmlFor="category">
-              {ui.add.category}
-            </label>
-            {categoryOptions.length ? (
-              <>
-                <select id="category" value={selectedCategory} onChange={(event) => setCategory(event.target.value)} className="input mt-2">
-                  {categoryChoices.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-2 text-sm text-moss">
-                  {ui.add.categorySuggestion}: {businessProfile.profile}.
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-sm text-moss">
-                {ui.add.categoryUnavailable}
-              </p>
-            )}
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={ui.add.date} id="date">
-              <input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="input" required />
-            </Field>
-            <Field label={ui.add.amount} id="amount">
-              <input id="amount" type="number" min="0" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} className="input" placeholder="Ex: 25 000" required />
-            </Field>
-          </div>
-          <Field label={ui.add.description} id="label">
-            <input id="label" value={label} onChange={(event) => setLabel(event.target.value)} className="input" placeholder="Ex: Assemblage meuble IKEA, Achat essence" required />
-          </Field>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label={ui.add.payment} id="payment-method">
-              <select
-                id="payment-method"
-                value={paymentMethod}
-                onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
-                className="input"
-              >
-                {paymentMethods.map((method) => (
-                  <option key={method} value={method}>
-                    {translatePaymentMethod(method, language)}
+        <form onSubmit={submit} className={`panel space-y-5 p-4 sm:p-5 ${isEditing ? "border-moss/50 ring-2 ring-mint" : ""}`}>
+          {isEditing ? (
+            <div className="rounded-md border border-moss/30 bg-mint px-3 py-2 text-sm font-semibold text-ink">{ui.add.editMode}</div>
+          ) : null}
+          <FormSection title={ui.add.mainInfo}>
+            <div>
+              <label className="label" htmlFor="kind">
+                {ui.add.type}
+              </label>
+              <select id="kind" value={kind} onChange={(event) => setKind(event.target.value as TransactionKind)} className="input mt-2">
+                {transactionTemplates.map((template) => (
+                  <option key={template.kind} value={template.kind}>
+                    {transactionKindLabels[template.kind][language]}
                   </option>
                 ))}
               </select>
+              <p className="mt-2 text-sm leading-6 text-moss">
+                {language === "fr"
+                  ? transactionTemplates.find((template) => template.kind === kind)?.helper
+                  : transactionTemplates.find((template) => template.kind === kind)?.english}
+              </p>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={ui.add.date} id="date">
+                <input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="input" required />
+              </Field>
+              <Field label={ui.add.amount} id="amount">
+                <input id="amount" type="number" min="0" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} className="input" placeholder="Ex: 25 000" required />
+              </Field>
+            </div>
+            <Field label={ui.add.description} id="label">
+              <input id="label" value={label} onChange={(event) => setLabel(event.target.value)} className="input" placeholder="Ex: Assemblage meuble IKEA, Achat essence" required />
             </Field>
-            <Field label={ui.add.party} id="party-name">
-              <input
-                id="party-name"
-                value={partyName}
-                onChange={(event) => setPartyName(event.target.value)}
-                className="input"
-                placeholder="Ex: Client Dupont, Fournisseur quincaillerie"
-              />
+            <div>
+              <label className="label" htmlFor="category">
+                {ui.add.category}
+              </label>
+              {categoryOptions.length ? (
+                <>
+                  <select id="category" value={selectedCategory} onChange={(event) => setCategory(event.target.value)} className="input mt-2">
+                    {categoryChoices.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-2 text-sm text-moss">
+                    {ui.add.categorySuggestion}: {businessProfile.profile}.
+                  </p>
+                </>
+              ) : (
+                <p className="mt-2 text-sm text-moss">{ui.add.categoryUnavailable}</p>
+              )}
+            </div>
+          </FormSection>
+
+          <FormSection title={ui.add.paymentDetails}>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label={ui.add.payment} id="payment-method">
+                <select
+                  id="payment-method"
+                  value={paymentMethod}
+                  onChange={(event) => setPaymentMethod(event.target.value as PaymentMethod)}
+                  className="input"
+                >
+                  {paymentMethods.map((method) => (
+                    <option key={method} value={method}>
+                      {translatePaymentMethod(method, language)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={ui.add.party} id="party-name">
+                <input
+                  id="party-name"
+                  value={partyName}
+                  onChange={(event) => setPartyName(event.target.value)}
+                  className="input"
+                  placeholder="Ex: Client Dupont, Fournisseur quincaillerie"
+                />
+              </Field>
+            </div>
+          </FormSection>
+
+          <FormSection title={ui.add.notesSection}>
+            <Field label={ui.add.note} id="note">
+              <textarea id="note" value={note} onChange={(event) => setNote(event.target.value)} className="input min-h-24 resize-y" placeholder="Détail utile pour vous relire plus tard" />
             </Field>
-          </div>
-          <Field label={ui.add.note} id="note">
-            <textarea id="note" value={note} onChange={(event) => setNote(event.target.value)} className="input min-h-24 resize-y" placeholder="Détail utile pour vous relire plus tard" />
-          </Field>
-          <button type="submit" className="inline-flex min-h-11 w-full items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white" style={{ borderRadius: 6 }}>
+          </FormSection>
+
+          <button type="submit" className="button-primary w-full">
             <CheckCircle2 size={17} aria-hidden />
             {isEditing ? ui.actions.saveChanges : ui.actions.saveTransaction}
           </button>
@@ -1383,8 +1402,7 @@ function Reports({
           <button
             type="button"
             onClick={() => window.print()}
-            className="no-print inline-flex min-h-11 items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white"
-            style={{ borderRadius: 6 }}
+            className="button-primary no-print w-full sm:w-auto"
           >
             <Printer size={17} aria-hidden />
             {ui.actions.printReports}
@@ -1395,17 +1413,17 @@ function Reports({
         {ui.reports.periodShown}: {periodLabel}
       </p>
       {!transactions.length ? (
-        <p className="panel p-4 text-sm font-semibold text-moss">{ui.empty}</p>
+        <EmptyState title={ui.empty} text={ui.emptyHelp} />
       ) : null}
       <div className="grid gap-5 xl:grid-cols-2">
-        <section className="panel p-4">
+        <section className="panel p-4 sm:p-5">
           <ReportTitle title={ui.reports.income} />
           <ReportLine label={ui.reports.revenue} value={revenue} />
           <ReportLine label={ui.reports.expenses} value={expenses} />
           <ReportLine label={ui.reports.netIncome} value={revenue - expenses} strong />
         </section>
 
-        <section className="panel p-4">
+        <section className="panel p-4 sm:p-5">
           <ReportTitle title={ui.reports.balance} />
           <ReportGroup title={ui.accountTypes.actif} lines={assets} ui={ui} language={language} />
           <ReportLine label={ui.reports.totalAssets} value={balanceSummary.assets} strong />
@@ -1418,13 +1436,13 @@ function Reports({
         </section>
       </div>
 
-      <section className="panel overflow-hidden p-4">
+      <section className="panel overflow-hidden p-4 sm:p-5">
         <ReportTitle title={ui.reports.trial} />
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-left text-sm">
+        <div className="max-w-full overflow-x-auto rounded-md border border-black/10">
+          <table className="w-full min-w-[640px] text-left text-xs sm:text-sm">
             <thead className="border-b border-black/10 text-xs uppercase text-moss">
               <tr>
-                <th className="py-3 pr-3">{ui.reports.account}</th>
+                <th className="py-3 pl-3 pr-3">{ui.reports.account}</th>
                 <th className="py-3 pr-3">{ui.reports.type}</th>
                 <th className="py-3 pr-3">{ui.reports.normalBalance}</th>
                 <th className="py-3 pr-3 text-right">{ui.sides.debit}</th>
@@ -1435,7 +1453,7 @@ function Reports({
               {periodBalances.length ? (
                 periodBalances.map((line) => (
                   <tr key={line.account} className="border-b border-black/5">
-                    <td className="py-3 pr-3 font-semibold">{translateAccountName(line.account, language)}</td>
+                    <td className="py-3 pl-3 pr-3 font-semibold">{translateAccountName(line.account, language)}</td>
                     <td className="py-3 pr-3">{ui.accountTypes[line.accountType]}</td>
                     <td className="py-3 pr-3">
                       {accountNormalSide[line.accountType] === "debit" ? ui.reports.debitBalance : ui.reports.creditBalance}:{" "}
@@ -1455,7 +1473,7 @@ function Reports({
             </tbody>
             <tfoot className="font-bold">
               <tr>
-                <td className="py-3 pr-3" colSpan={3}>
+                <td className="py-3 pl-3 pr-3" colSpan={3}>
                   {ui.reports.totals}
                 </td>
                 <td className="py-3 pr-3 text-right">{formatCurrency(totalDebits)}</td>
@@ -1508,7 +1526,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
   return (
     <div className="space-y-5">
       <Header title={ui.learn.title} subtitle={ui.learn.subtitle} eyebrow={ui.applicationMvp} />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2">
         {lessons.map((lesson) => {
           const Icon = lesson.icon;
           const lessonContent =
@@ -1516,7 +1534,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
               ? { title: lesson.title.replace(/\s*\(.+\)$/, ""), text: lesson.text }
               : (englishLessons[lesson.title] ?? { title: lesson.title, text: lesson.text });
           return (
-            <article key={lesson.title} className="panel p-4">
+            <article key={lesson.title} className="panel p-4 transition hover:border-moss/40 sm:p-5">
               <div className="mb-3 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-mint text-ink">
                   <Icon size={19} aria-hidden />
@@ -1529,7 +1547,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
         })}
       </div>
 
-      <section className="panel p-4 sm:p-5">
+      <section className="panel p-4 sm:p-6">
         <div className="flex flex-col gap-4 border-b border-black/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="label">{ui.learn.quiz}</p>
@@ -1538,7 +1556,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
               {ui.learn.question} {(questionIndex % questions.length) + 1} {ui.learn.of} {questions.length} · {question.type}
             </p>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-2 text-center sm:min-w-80">
             <ScoreItem label={ui.learn.score} value={correctAnswers} />
             <ScoreItem label={ui.learn.answered} value={answeredQuestions} />
             <ScoreItem label={ui.learn.success} value={`${successRate}%`} />
@@ -1565,8 +1583,8 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
                   type="button"
                   onClick={() => answerQuestion(choice)}
                   disabled={hasAnswered}
-                  className={`min-h-12 border px-4 py-3 text-left text-sm font-semibold transition ${answerClass}`}
-                  style={{ borderRadius: 6 }}
+                className={`min-h-12 border px-4 py-3 text-left text-sm font-semibold transition sm:min-h-14 ${answerClass}`}
+                style={{ borderRadius: 6 }}
                 >
                   {choice}
                 </button>
@@ -1576,11 +1594,14 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
         </div>
 
         {hasAnswered ? (
-          <div className={`border p-4 ${isCorrect ? "border-moss bg-mint" : "border-clay bg-white"}`} style={{ borderRadius: 8 }}>
-            <p className={`font-bold ${isCorrect ? "text-ink" : "text-clay"}`}>
-              {isCorrect ? ui.learn.correct : `${ui.learn.incorrect}: ${question.correctAnswer}`}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-moss">{question.explanation}</p>
+          <div className={`flex gap-3 border p-4 ${isCorrect ? "border-moss bg-mint" : "border-clay bg-white"}`} style={{ borderRadius: 8 }}>
+            <CheckCircle2 className={isCorrect ? "mt-0.5 shrink-0 text-moss" : "mt-0.5 shrink-0 text-clay"} size={20} aria-hidden />
+            <div>
+              <p className={`font-bold ${isCorrect ? "text-ink" : "text-clay"}`}>
+                {isCorrect ? ui.learn.correct : `${ui.learn.incorrect}: ${question.correctAnswer}`}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-moss">{question.explanation}</p>
+            </div>
           </div>
         ) : null}
 
@@ -1588,8 +1609,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
           <button
             type="button"
             onClick={restartQuiz}
-            className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-4 text-sm font-bold text-ink hover:border-moss"
-            style={{ borderRadius: 6 }}
+            className="button-secondary"
           >
             {ui.actions.restartQuiz}
           </button>
@@ -1597,8 +1617,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
             type="button"
             onClick={nextQuestion}
             disabled={!hasAnswered}
-            className="inline-flex min-h-10 items-center justify-center bg-ink px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
-            style={{ borderRadius: 6 }}
+            className="button-primary"
           >
             {ui.actions.nextQuestion}
           </button>
@@ -1610,7 +1629,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
 
 function ScoreItem({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="min-w-20 border border-black/10 bg-white px-2 py-2" style={{ borderRadius: 6 }}>
+    <div className="min-w-20 border border-black/10 bg-white px-2 py-3" style={{ borderRadius: 6 }}>
       <p className="text-lg font-bold text-ink">{value}</p>
       <p className="text-[10px] font-semibold uppercase leading-4 text-moss">{label}</p>
     </div>
@@ -1664,7 +1683,7 @@ function BusinessProfileView({
 
 function CategoryPanel({ title, categories }: { title: string; categories: string[] }) {
   return (
-    <section className="panel p-4">
+    <section className="panel p-4 sm:p-5">
       <h2 className="text-lg font-bold">{title}</h2>
       <div className="mt-4 flex flex-wrap gap-2">
         {categories.map((category) => (
@@ -1689,13 +1708,13 @@ function Header({
   eyebrow: string;
 }) {
   return (
-    <header className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+    <header className="panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div>
         <p className="label">{eyebrow}</p>
         <h2 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-moss">{subtitle}</p>
       </div>
-      {action}
+      {action ? <div className="w-full sm:w-auto">{action}</div> : null}
     </header>
   );
 }
@@ -1707,6 +1726,24 @@ function Field({ label, id, children }: { label: string; id: string; children: R
         {label}
       </label>
       <div className="mt-2">{children}</div>
+    </div>
+  );
+}
+
+function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-4 border-b border-black/10 pb-5 last:border-b-0 last:pb-0">
+      <h3 className="text-sm font-bold uppercase text-ink">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function EmptyState({ title, text }: { title: string; text: string }) {
+  return (
+    <div className="soft-card text-center">
+      <p className="font-bold text-ink">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-moss">{text}</p>
     </div>
   );
 }
@@ -1727,7 +1764,7 @@ function TransactionList({
   language: Language;
 }) {
   if (!transactions.length) {
-    return <p className="text-sm text-moss">{emptyMessage ?? ui.empty}</p>;
+    return <EmptyState title={emptyMessage ?? ui.empty} text={ui.emptyHelp} />;
   }
 
   const confirmDelete = (transaction: Transaction) => {
@@ -1741,9 +1778,9 @@ function TransactionList({
   return (
     <div className="grid gap-3">
       {transactions.map((transaction) => (
-        <article key={transaction.id} className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-            <div>
+        <article key={transaction.id} className="soft-card">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-bold">{transaction.label}</p>
                 {transaction.isSample ? (
@@ -1776,22 +1813,20 @@ function TransactionList({
                 </p>
               ) : null}
             </div>
-            <div className="flex items-center gap-3 self-start">
-              <p className="text-lg font-bold">{formatCurrency(transaction.amount)}</p>
-              <div className="flex items-center gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:items-end">
+              <p className="text-xl font-bold text-ink">{formatCurrency(transaction.amount)}</p>
+              <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
                 <button
                   type="button"
                   onClick={() => onEditTransaction(transaction)}
-                  className="inline-flex min-h-9 items-center justify-center border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-moss"
-                  style={{ borderRadius: 6 }}
+                  className="button-secondary min-h-10 px-3"
                 >
                   {ui.actions.edit}
                 </button>
                 <button
                   type="button"
                   onClick={() => confirmDelete(transaction)}
-                  className="inline-flex min-h-9 items-center justify-center border border-black/10 bg-white px-3 text-sm font-semibold text-clay hover:border-clay"
-                  style={{ borderRadius: 6 }}
+                  className="button-danger min-h-10 px-3"
                 >
                   {ui.actions.delete}
                 </button>
@@ -1810,7 +1845,7 @@ function AccountingExplanation({ transaction, ui, language }: { transaction: Tra
   const creditTotal = sum(transaction.generated.journal.map((line) => line.credit));
 
   return (
-    <section className="panel space-y-4 p-4">
+    <section className="panel space-y-4 p-4 sm:p-5">
       <div>
         <p className="label">{ui.transactionDetails.explanation}</p>
         <h2 className="mt-1 text-xl font-bold">{ui.transactionDetails.changed}</h2>
@@ -1836,7 +1871,7 @@ function AccountingExplanation({ transaction, ui, language }: { transaction: Tra
         <h3 className="mb-2 font-bold">{ui.transactionDetails.affectedAccounts}</h3>
         <div className="grid gap-2 sm:grid-cols-2">
           {transaction.generated.affectedAccounts.map((account) => (
-            <div key={`${account.name}-${account.movement}`} className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
+            <div key={`${account.name}-${account.movement}`} className="soft-card">
               <p className="font-semibold">{translateAccountName(account.name, language)}</p>
               <p className="text-sm text-moss">{ui.accountTypes[account.type]}</p>
               <p className="text-sm text-moss">
@@ -1850,7 +1885,7 @@ function AccountingExplanation({ transaction, ui, language }: { transaction: Tra
       <JournalTable journal={transaction.generated.journal} ui={ui} language={language} />
 
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
+        <div className="soft-card">
           <p className="label">{ui.transactionDetails.verification}</p>
           <p className="mt-1 font-bold">
             {formatCurrency(debitTotal)} = {formatCurrency(creditTotal)}
@@ -1859,7 +1894,7 @@ function AccountingExplanation({ transaction, ui, language }: { transaction: Tra
             {transaction.generated.debitsEqualCredits ? ui.transactionDetails.equal : ui.transactionDetails.notEqual}
           </p>
         </div>
-        <div className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
+        <div className="soft-card">
           <p className="label">{ui.transactionDetails.statements}</p>
           <p className="mt-1 text-sm leading-6 text-moss">
             {transaction.generated.affectedStatements.map((statement) => translateStatementName(statement, language)).join(", ")}
@@ -1880,11 +1915,11 @@ function JournalTable({
   language: Language;
 }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[520px] text-left text-sm">
+    <div className="max-w-full overflow-x-auto rounded-md border border-black/10">
+      <table className="w-full min-w-[520px] text-left text-xs sm:text-sm">
         <thead className="border-b border-black/10 text-xs uppercase text-moss">
           <tr>
-            <th className="py-3 pr-3">{ui.reports.account}</th>
+            <th className="py-3 pl-3 pr-3">{ui.reports.account}</th>
             <th className="py-3 pr-3">{ui.reports.type}</th>
             <th className="py-3 pr-3 text-right">{ui.sides.debit}</th>
             <th className="py-3 pr-3 text-right">{ui.sides.credit}</th>
@@ -1893,7 +1928,7 @@ function JournalTable({
         <tbody>
           {journal.map((line) => (
             <tr key={`${line.account}-${line.debit}-${line.credit}`} className="border-b border-black/5">
-              <td className="py-3 pr-3 font-semibold">{translateAccountName(line.account, language)}</td>
+              <td className="py-3 pl-3 pr-3 font-semibold">{translateAccountName(line.account, language)}</td>
               <td className="py-3 pr-3">{ui.accountTypes[line.accountType]}</td>
               <td className="py-3 pr-3 text-right">{line.debit ? formatCurrency(line.debit) : "-"}</td>
               <td className="py-3 pr-3 text-right">{line.credit ? formatCurrency(line.credit) : "-"}</td>
@@ -1938,9 +1973,9 @@ function ReportGroup({
 
 function ReportLine({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) {
   return (
-    <div className={`flex items-center justify-between gap-4 border-b border-black/5 py-2 ${strong ? "font-bold text-ink" : "text-sm text-moss"}`}>
-      <span>{label}</span>
-      <span>{formatCurrency(value)}</span>
+    <div className={`flex items-center justify-between gap-4 border-b border-black/5 py-3 ${strong ? "font-bold text-ink" : "text-sm text-moss"}`}>
+      <span className="min-w-0">{label}</span>
+      <span className="shrink-0 text-right">{formatCurrency(value)}</span>
     </div>
   );
 }

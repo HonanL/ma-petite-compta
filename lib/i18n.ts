@@ -10,6 +10,7 @@ export const translations = {
   fr: {
     appName: "Ma Petite Compta",
     appSubtitle: "Comptabilité simple",
+    heroTagline: "La comptabilité simple pour apprendre et gérer votre petit business.",
     language: "Langue",
     applicationMvp: "Application MVP",
     nav: {
@@ -60,7 +61,11 @@ export const translations = {
       party: "Client ou fournisseur facultatif",
       note: "Note facultative",
       categoryUnavailable: "Aucune catégorie recommandée pour ce type de transaction. La logique comptable reste inchangée.",
-      categorySuggestion: "Suggestions pour le profil"
+      categorySuggestion: "Suggestions pour le profil",
+      mainInfo: "Informations principales",
+      paymentDetails: "Détails de paiement",
+      notesSection: "Notes",
+      editMode: "Mode modification"
     },
     reports: {
       title: "Rapports",
@@ -130,7 +135,8 @@ export const translations = {
       start: "Date de début",
       end: "Date de fin"
     },
-    empty: "Aucune transaction pour cette période. Ajoutez une transaction ou changez le filtre de période.",
+    empty: "Aucune transaction pour cette période.",
+    emptyHelp: "Ajoutez votre première transaction pour voir vos rapports, ou utilisez les données d'exemple pour tester l'application.",
     storage: "Stockage",
     localStorage: "Les données restent dans ce navigateur avec localStorage.",
     profileLabel: "Profil",
@@ -180,6 +186,7 @@ export const translations = {
   en: {
     appName: "Ma Petite Compta",
     appSubtitle: "Simple accounting",
+    heroTagline: "Simple accounting to learn and manage your small business.",
     language: "Language",
     applicationMvp: "MVP app",
     nav: {
@@ -230,7 +237,11 @@ export const translations = {
       party: "Optional client or supplier",
       note: "Optional notes",
       categoryUnavailable: "No suggested category for this transaction type. The accounting logic stays unchanged.",
-      categorySuggestion: "Suggestions for profile"
+      categorySuggestion: "Suggestions for profile",
+      mainInfo: "Main information",
+      paymentDetails: "Payment details",
+      notesSection: "Notes",
+      editMode: "Edit mode"
     },
     reports: {
       title: "Reports",
@@ -300,7 +311,8 @@ export const translations = {
       start: "Start date",
       end: "End date"
     },
-    empty: "No transactions for this period. Add a transaction or change the period filter.",
+    empty: "No transactions for this period.",
+    emptyHelp: "Add your first transaction to see reports, or use example data to test the app.",
     storage: "Storage",
     localStorage: "Data stays in this browser with localStorage.",
     profileLabel: "Profile",
