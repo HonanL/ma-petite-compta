@@ -398,8 +398,17 @@ export default function Home() {
   const [period, setPeriod] = useState<PeriodState>({ preset: "current-month", startDate: "", endDate: "" });
   const [backupMessage, setBackupMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
-  const { transactions, loaded, addTransaction, updateTransaction, replaceTransactions, deleteTransaction, clearTransactions } =
-    useTransactions();
+  const {
+    transactions,
+    loaded,
+    addTransaction,
+    addSampleTransactions,
+    removeSampleTransactions,
+    updateTransaction,
+    replaceTransactions,
+    deleteTransaction,
+    clearTransactions
+  } = useTransactions();
   const { profile, loaded: profileLoaded, setProfile } = useBusinessProfile();
   const periodTransactions = useMemo(() => filterTransactionsByPeriod(transactions, period), [transactions, period]);
   const balanceTransactions = useMemo(() => filterTransactionsUntilPeriodEnd(transactions, period), [transactions, period]);
@@ -599,8 +608,14 @@ export default function Home() {
                 <Dashboard
                   summary={summary}
                   transactions={periodTransactions}
+                  hasTransactions={transactions.length > 0}
+                  hasSamples={transactions.some((transaction) => transaction.isSample)}
                   periodLabel={periodLabel}
                   onCreateTransaction={startNewTransaction}
+                  onOpenProfile={() => setTab("profile")}
+                  onOpenReports={() => setTab("reports")}
+                  onAddSamples={addSampleTransactions}
+                  onRemoveSamples={removeSampleTransactions}
                   onEditTransaction={startEditingTransaction}
                   onDeleteTransaction={deleteTransaction}
                 />
@@ -715,15 +730,27 @@ function PeriodSelector({
 function Dashboard({
   summary,
   transactions,
+  hasTransactions,
+  hasSamples,
   periodLabel,
   onCreateTransaction,
+  onOpenProfile,
+  onOpenReports,
+  onAddSamples,
+  onRemoveSamples,
   onEditTransaction,
   onDeleteTransaction
 }: {
   summary: ReturnType<typeof calculateSummary>;
   transactions: Transaction[];
+  hasTransactions: boolean;
+  hasSamples: boolean;
   periodLabel: string;
   onCreateTransaction: () => void;
+  onOpenProfile: () => void;
+  onOpenReports: () => void;
+  onAddSamples: () => void;
+  onRemoveSamples: () => void;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
 }) {
@@ -754,6 +781,44 @@ function Dashboard({
         }
       />
 
+      {!hasTransactions ? (
+        <Onboarding
+          onOpenProfile={onOpenProfile}
+          onCreateTransaction={onCreateTransaction}
+          onOpenReports={onOpenReports}
+          onAddSamples={onAddSamples}
+        />
+      ) : (
+        <section className="panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="font-bold">Données d&apos;exemple</p>
+            <p className="mt-1 text-sm text-moss">
+              Ajoutez quelques transactions fictives pour tester les rapports sans modifier vos données réelles.
+            </p>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={onAddSamples}
+              className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-bold text-ink hover:border-moss"
+              style={{ borderRadius: 6 }}
+            >
+              Ajouter des exemples
+            </button>
+            {hasSamples ? (
+              <button
+                type="button"
+                onClick={onRemoveSamples}
+                className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-3 text-sm font-bold text-clay hover:border-clay"
+                style={{ borderRadius: 6 }}
+              >
+                Supprimer les exemples
+              </button>
+            ) : null}
+          </div>
+        </section>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {cards.map((card) => {
           const Icon = card.icon;
@@ -783,11 +848,93 @@ function Dashboard({
         </div>
         <TransactionList
           transactions={transactions.slice(0, 6)}
+          emptyMessage="Aucune transaction pour cette période. Ajoutez une transaction ou changez le filtre de période."
           onEditTransaction={onEditTransaction}
           onDeleteTransaction={onDeleteTransaction}
         />
       </section>
     </div>
+  );
+}
+
+function Onboarding({
+  onOpenProfile,
+  onCreateTransaction,
+  onOpenReports,
+  onAddSamples
+}: {
+  onOpenProfile: () => void;
+  onCreateTransaction: () => void;
+  onOpenReports: () => void;
+  onAddSamples: () => void;
+}) {
+  const steps = [
+    {
+      title: "Étape 1: Choisissez votre profil d'entreprise",
+      text: "Ma Petite Compta proposera des catégories adaptées à votre activité.",
+      icon: BriefcaseBusiness,
+      action: onOpenProfile,
+      button: "Choisir le profil"
+    },
+    {
+      title: "Étape 2: Ajoutez une transaction",
+      text: "Enregistrez un revenu, une dépense, un investissement ou un achat.",
+      icon: Plus,
+      action: onCreateTransaction,
+      button: "Ajouter une transaction"
+    },
+    {
+      title: "Étape 3: Consultez vos rapports et apprenez la comptabilité",
+      text: "Vos écritures alimentent automatiquement le tableau de bord et les rapports.",
+      icon: FileBarChart2,
+      action: onOpenReports,
+      button: "Voir les rapports"
+    }
+  ];
+
+  return (
+    <section className="panel p-4 sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="label">Bienvenue</p>
+          <h2 className="mt-1 text-xl font-bold">Bienvenue dans Ma Petite Compta</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-moss">
+            Commencez par choisir votre profil d&apos;entreprise, puis ajoutez votre première transaction.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onAddSamples}
+          className="inline-flex min-h-11 items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white"
+          style={{ borderRadius: 6 }}
+        >
+          Ajouter des exemples
+        </button>
+      </div>
+
+      <div className="mt-5 grid gap-4 lg:grid-cols-3">
+        {steps.map((step) => {
+          const Icon = step.icon;
+          return (
+            <article key={step.title} className="border border-black/10 bg-white p-4" style={{ borderRadius: 8 }}>
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-mint text-ink">
+                <Icon size={19} aria-hidden />
+              </div>
+              <h3 className="mt-3 text-base font-bold">{step.title}</h3>
+              <p className="mt-2 text-sm leading-6 text-moss">{step.text}</p>
+              <button
+                type="button"
+                onClick={step.action}
+                className="mt-4 inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-3 text-sm font-bold text-ink hover:border-moss"
+                style={{ borderRadius: 6 }}
+              >
+                {step.button}
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -855,7 +1002,8 @@ function AddTransaction({
       category: selectedCategory,
       paymentMethod,
       partyName,
-      note
+      note,
+      isSample: editingTransaction?.isSample
     });
 
     if (editingTransaction) {
@@ -1024,6 +1172,11 @@ function Reports({
         }
       />
       <p className="panel p-4 text-sm font-semibold text-moss">Période affichée : {periodLabel}</p>
+      {!transactions.length ? (
+        <p className="panel p-4 text-sm font-semibold text-moss">
+          Aucune transaction pour cette période. Ajoutez une transaction ou changez le filtre de période.
+        </p>
+      ) : null}
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="panel p-4">
           <ReportTitle title="État des résultats" english="Income Statement" />
@@ -1059,18 +1212,26 @@ function Reports({
               </tr>
             </thead>
             <tbody>
-              {periodBalances.map((line) => (
-                <tr key={line.account} className="border-b border-black/5">
-                  <td className="py-3 pr-3 font-semibold">{line.account}</td>
-                  <td className="py-3 pr-3">{accountTypeLabels[line.accountType]}</td>
-                  <td className="py-3 pr-3">
-                    {accountNormalSide[line.accountType] === "debit" ? "Solde débiteur" : "Solde créditeur"}:{" "}
-                    {formatCurrency(line.balance)}
+              {periodBalances.length ? (
+                periodBalances.map((line) => (
+                  <tr key={line.account} className="border-b border-black/5">
+                    <td className="py-3 pr-3 font-semibold">{line.account}</td>
+                    <td className="py-3 pr-3">{accountTypeLabels[line.accountType]}</td>
+                    <td className="py-3 pr-3">
+                      {accountNormalSide[line.accountType] === "debit" ? "Solde débiteur" : "Solde créditeur"}:{" "}
+                      {formatCurrency(line.balance)}
+                    </td>
+                    <td className="py-3 pr-3 text-right">{formatCurrency(line.debit)}</td>
+                    <td className="py-3 pr-3 text-right">{formatCurrency(line.credit)}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={5} className="py-5 text-center text-sm text-moss">
+                    Aucune transaction pour cette période. Ajoutez une transaction ou changez le filtre de période.
                   </td>
-                  <td className="py-3 pr-3 text-right">{formatCurrency(line.debit)}</td>
-                  <td className="py-3 pr-3 text-right">{formatCurrency(line.credit)}</td>
                 </tr>
-              ))}
+              )}
             </tbody>
             <tfoot className="font-bold">
               <tr>
@@ -1314,15 +1475,17 @@ function Field({ label, id, children }: { label: string; id: string; children: R
 
 function TransactionList({
   transactions,
+  emptyMessage = "Aucune transaction enregistrée.",
   onEditTransaction,
   onDeleteTransaction
 }: {
   transactions: Transaction[];
+  emptyMessage?: string;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
 }) {
   if (!transactions.length) {
-    return <p className="text-sm text-moss">Aucune transaction enregistrée.</p>;
+    return <p className="text-sm text-moss">{emptyMessage}</p>;
   }
 
   const confirmDelete = (transaction: Transaction) => {
@@ -1339,7 +1502,14 @@ function TransactionList({
         <article key={transaction.id} className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <p className="font-bold">{transaction.label}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-bold">{transaction.label}</p>
+                {transaction.isSample ? (
+                  <span className="border border-moss/30 bg-mint px-2 py-1 text-[10px] font-bold uppercase text-moss" style={{ borderRadius: 6 }}>
+                    Exemple
+                  </span>
+                ) : null}
+              </div>
               <p className="text-sm text-moss">
                 {formatFrenchDate(transaction.date)} - {transactionTemplates.find((template) => template.kind === transaction.kind)?.title}
               </p>

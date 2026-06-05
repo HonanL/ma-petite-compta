@@ -5,6 +5,7 @@ import {
   PaymentMethod,
   Transaction,
   TransactionKind,
+  createSampleTransactions,
   formatLocalDateInput,
   generateAccounting,
   paymentMethods
@@ -47,6 +48,7 @@ const isTransaction = (value: unknown): value is Transaction => {
     (candidate.paymentMethod === undefined || isPaymentMethod(candidate.paymentMethod)) &&
     (candidate.partyName === undefined || typeof candidate.partyName === "string") &&
     (candidate.note === undefined || typeof candidate.note === "string") &&
+    (candidate.isSample === undefined || typeof candidate.isSample === "boolean") &&
     typeof candidate.kind === "string" &&
     transactionKinds.includes(candidate.kind as TransactionKind)
   );
@@ -64,6 +66,7 @@ export const normalizeTransactions = (value: unknown): Transaction[] | null => {
     partyName: transaction.partyName ?? "",
     category: transaction.category ?? "",
     note: transaction.note ?? "",
+    isSample: transaction.isSample ?? false,
     generated: generateAccounting(transaction.kind, transaction.amount)
   }));
 };
@@ -109,6 +112,12 @@ export const useTransactions = () => {
       transactions,
       loaded,
       addTransaction: (transaction: Transaction) => setTransactions((current) => [transaction, ...current]),
+      addSampleTransactions: () =>
+        setTransactions((current) => {
+          const withoutSamples = current.filter((transaction) => !transaction.isSample);
+          return [...createSampleTransactions(), ...withoutSamples];
+        }),
+      removeSampleTransactions: () => setTransactions((current) => current.filter((transaction) => !transaction.isSample)),
       updateTransaction: (transaction: Transaction) =>
         setTransactions((current) => current.map((item) => (item.id === transaction.id ? transaction : item))),
       replaceTransactions: (nextTransactions: Transaction[]) => setTransactions(nextTransactions),

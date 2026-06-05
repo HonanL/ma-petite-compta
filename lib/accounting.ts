@@ -49,6 +49,7 @@ export type Transaction = {
   paymentMethod: PaymentMethod;
   partyName?: string;
   note?: string;
+  isSample?: boolean;
   generated: GeneratedAccounting;
 };
 
@@ -225,7 +226,10 @@ export const generateAccounting = (kind: TransactionKind, amount: number): Gener
 };
 
 export const createTransaction = (
-  input: Pick<Transaction, "date" | "kind" | "label" | "amount" | "category" | "paymentMethod" | "partyName" | "note">
+  input: Pick<
+    Transaction,
+    "date" | "kind" | "label" | "amount" | "category" | "paymentMethod" | "partyName" | "note" | "isSample"
+  >
 ): Transaction => ({
   ...input,
   id: crypto.randomUUID(),
@@ -374,5 +378,63 @@ export const demoTransactions = (): Transaction[] => [
     category: "Logiciels",
     paymentMethod: "Carte bancaire",
     note: "Outil de gestion"
+  })
+];
+
+export const createSampleTransactions = (): Transaction[] => [
+  createTransaction({
+    date: formatLocalDateInput(),
+    kind: "owner-investment",
+    label: "Investissement du propriétaire",
+    amount: 100000,
+    category: "",
+    paymentMethod: "Virement",
+    partyName: "Propriétaire",
+    note: "Transaction d'exemple",
+    isSample: true
+  }),
+  createTransaction({
+    date: formatLocalDateInput(),
+    kind: "client-payment",
+    label: "Assemblage meuble",
+    amount: 25000,
+    category: "Revenus de service",
+    paymentMethod: "Mobile Money",
+    partyName: "Client exemple",
+    note: "Transaction d'exemple",
+    isSample: true
+  }),
+  createTransaction({
+    date: formatLocalDateInput(),
+    kind: "cash-expense",
+    label: "Essence déplacement",
+    amount: 5000,
+    category: "Essence / déplacement",
+    paymentMethod: "Espèces",
+    partyName: "Station-service",
+    note: "Transaction d'exemple",
+    isSample: true
+  }),
+  createTransaction({
+    date: formatLocalDateInput(),
+    kind: "equipment-purchase",
+    label: "Perceuse",
+    amount: 40000,
+    category: "Outils",
+    paymentMethod: "Carte bancaire",
+    partyName: "Fournisseur quincaillerie",
+    note: "Transaction d'exemple",
+    isSample: true
+  }),
+  createTransaction({
+    date: formatLocalDateInput(),
+    kind: "client-payment",
+    label: "Installation étagère",
+    amount: 15000,
+    category: "Revenus de service",
+    paymentMethod: "Mobile Money",
+    partyName: "Client exemple",
+    note: "Transaction d'exemple",
+    isSample: true
   })
 ];
