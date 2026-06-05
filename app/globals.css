@@ -13,9 +13,10 @@
 body {
   margin: 0;
   background:
-    radial-gradient(circle at top left, rgba(223, 244, 232, 0.78), transparent 30rem),
-    linear-gradient(135deg, #fbfbf7 0%, #f6f4ed 58%, #eef5f1 100%);
-  color: #13201b;
+    radial-gradient(circle at top left, rgba(47, 188, 69, 0.13), transparent 28rem),
+    radial-gradient(circle at top right, rgba(11, 74, 122, 0.10), transparent 30rem),
+    linear-gradient(135deg, #f7faf8 0%, #ffffff 55%, #eef7f1 100%);
+  color: #102a43;
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -30,7 +31,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid rgba(66, 92, 76, 0.35);
+  outline: 3px solid rgba(47, 188, 69, 0.35);
   outline-offset: 2px;
 }
 
@@ -40,7 +41,7 @@ textarea:focus-visible {
 
 @layer components {
   .panel {
-    @apply border border-black/10 bg-white/90 shadow-soft backdrop-blur;
+    @apply border border-line bg-white/95 shadow-soft backdrop-blur;
     border-radius: 8px;
   }
 
@@ -49,39 +50,39 @@ textarea:focus-visible {
   }
 
   .input {
-    @apply w-full border border-black/10 bg-white px-3 py-3 text-sm text-ink transition focus:border-moss;
+    @apply w-full border border-line bg-white px-3 py-3 text-sm text-ink transition focus:border-accent;
     border-radius: 6px;
   }
 
   .button-primary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white transition hover:bg-moss disabled:cursor-not-allowed disabled:opacity-45;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 bg-accent px-4 text-sm font-bold text-ink transition hover:bg-accent/85 disabled:cursor-not-allowed disabled:opacity-45;
     border-radius: 6px;
   }
 
   .button-secondary {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 border border-black/10 bg-white px-4 text-sm font-bold text-ink transition hover:border-moss hover:bg-mint;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 border border-line bg-white px-4 text-sm font-bold text-moss transition hover:border-accent hover:bg-mint;
     border-radius: 6px;
   }
 
   .button-danger {
-    @apply inline-flex min-h-11 items-center justify-center gap-2 border border-black/10 bg-white px-4 text-sm font-bold text-clay transition hover:border-clay hover:bg-white;
+    @apply inline-flex min-h-11 items-center justify-center gap-2 border border-line bg-white px-4 text-sm font-bold text-clay transition hover:border-clay hover:bg-white;
     border-radius: 6px;
   }
 
   .soft-card {
-    @apply border border-black/10 bg-white p-4;
+    @apply border border-line bg-white p-4 shadow-soft;
     border-radius: 8px;
   }
 
   .icon-button {
-    @apply inline-flex h-10 w-10 items-center justify-center border border-black/10 bg-white text-ink transition hover:border-moss hover:text-moss;
+    @apply inline-flex h-10 w-10 items-center justify-center border border-line bg-white text-moss transition hover:border-accent hover:text-ink;
     border-radius: 6px;
   }
 }
 
 @media (max-width: 640px) {
   body {
-    background: linear-gradient(180deg, #fbfbf7 0%, #eef5f1 100%);
+    background: linear-gradient(180deg, #f7faf8 0%, #ffffff 100%);
   }
 }
 

@@ -3,7 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Ma Petite Compta",
-  description: "MVP de comptabilité simple pour petits entrepreneurs francophones"
+  description: "MVP de comptabilité simple pour petits entrepreneurs francophones",
+  icons: {
+    icon: "/logo-ma-petite-compta.png",
+    apple: "/logo-ma-petite-compta.png"
+  }
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

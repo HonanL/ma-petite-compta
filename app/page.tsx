@@ -3,7 +3,6 @@
 import {
   ArrowDownRight,
   ArrowUpRight,
-  BadgeEuro,
   Banknote,
   BriefcaseBusiness,
   Building2,
@@ -25,6 +24,7 @@ import {
   Upload,
   WalletCards
 } from "lucide-react";
+import Image from "next/image";
 import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
 import {
   AccountType,
@@ -87,6 +87,7 @@ const navigation = [
 
 const cashAccountName = "Encaisse (Cash)";
 const accountsPayableName = "Comptes fournisseurs (Accounts Payable)";
+const logoPath = "/logo-ma-petite-compta.png";
 
 const getAccountBalance = (transactions: Transaction[], accountName: string) =>
   calculateAccountBalances(transactions).find((balance) => balance.account === accountName)?.balance ?? 0;
@@ -695,8 +696,8 @@ export default function Home() {
         <aside className="panel no-print flex flex-col gap-4 p-3 sm:p-4 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72">
           <div>
             <div className="flex items-center justify-between gap-3 lg:items-start lg:justify-start">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-ink text-white">
-                <BadgeEuro size={23} aria-hidden />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-white shadow-soft">
+                <Image src={logoPath} alt="" width={48} height={48} className="h-full w-full object-cover" priority />
               </div>
               <div className="min-w-0 flex-1">
                 <h1 className="text-xl font-bold text-ink">{ui.appName}</h1>
@@ -705,13 +706,13 @@ export default function Home() {
             </div>
             <div className="mt-4 flex items-center justify-between gap-2">
               <p className="label">{ui.language}</p>
-              <div className="inline-flex border border-black/10 bg-white" style={{ borderRadius: 6 }}>
+              <div className="inline-flex border border-line bg-white shadow-sm" style={{ borderRadius: 6 }}>
                 {(["fr", "en"] as Language[]).map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => setLanguage(option)}
-                    className={`min-h-9 px-3 text-xs font-bold ${language === option ? "bg-ink text-white" : "text-ink hover:bg-mint"}`}
+                    className={`min-h-9 px-3 text-xs font-bold ${language === option ? "bg-moss text-white" : "text-moss hover:bg-mint"}`}
                     style={{ borderRadius: 5 }}
                   >
                     {option.toUpperCase()}
@@ -736,7 +737,7 @@ export default function Home() {
                     }
                   }}
                   className={`flex min-h-14 flex-col items-center justify-center gap-1 px-2 py-2 text-center text-[11px] font-semibold leading-tight transition sm:min-h-11 sm:flex-row sm:justify-start sm:gap-3 sm:px-3 sm:text-left sm:text-sm ${
-                    tab === item.id ? "bg-ink text-white" : "text-ink hover:bg-mint"
+                    tab === item.id ? "bg-moss text-white shadow-sm" : "text-moss hover:bg-mint"
                   }`}
                   style={{ borderRadius: 6 }}
                 >
@@ -747,7 +748,7 @@ export default function Home() {
             })}
           </nav>
 
-          <div className="mt-auto border-t border-black/10 pt-4">
+          <div className="mt-auto border-t border-line pt-4">
             <p className="label">{ui.storage}</p>
             <p className="mt-2 text-sm text-moss">{ui.localStorage}</p>
             <p className="mt-2 text-sm font-semibold text-ink">{ui.profileLabel}: {profile}</p>
@@ -981,10 +982,10 @@ function Dashboard({
   isPeriodFiltered: boolean;
 }) {
   const cards = [
-    { label: ui.dashboard.cash, value: balanceSummary.cash, icon: Banknote, tone: "bg-ink text-white" },
-    { label: ui.dashboard.revenue, value: periodSummary.revenue, icon: ArrowUpRight, tone: "bg-mint text-ink" },
+    { label: ui.dashboard.cash, value: balanceSummary.cash, icon: Banknote, tone: "bg-moss text-white" },
+    { label: ui.dashboard.revenue, value: periodSummary.revenue, icon: ArrowUpRight, tone: "bg-accent text-ink" },
     { label: ui.dashboard.expenses, value: periodSummary.expenses, icon: ArrowDownRight, tone: "bg-white text-clay" },
-    { label: ui.dashboard.netIncome, value: periodSummary.netIncome, icon: Scale, tone: "bg-mint text-ink" },
+    { label: ui.dashboard.netIncome, value: periodSummary.netIncome, icon: Scale, tone: periodSummary.netIncome >= 0 ? "bg-accent text-ink" : "bg-white text-clay" },
     { label: ui.dashboard.liabilities, value: balanceSummary.liabilities, icon: Landmark, tone: "bg-white text-ink" },
     { label: ui.dashboard.equity, value: balanceSummary.equity, icon: Building2, tone: "bg-white text-ink" }
   ];
@@ -1010,8 +1011,16 @@ function Dashboard({
       <section className="panel overflow-hidden p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
+            <Image
+              src={logoPath}
+              alt="Ma Petite Compta"
+              width={92}
+              height={92}
+              className="mb-4 h-16 w-16 rounded-md border border-line bg-white object-cover shadow-soft sm:h-20 sm:w-20"
+              priority
+            />
             <p className="label">{ui.appName}</p>
-            <h2 className="mt-2 max-w-3xl text-2xl font-bold leading-tight text-ink sm:text-4xl">{ui.heroTagline}</h2>
+            <h2 className="mt-2 max-w-3xl text-2xl font-bold leading-tight text-moss sm:text-4xl">{ui.heroTagline}</h2>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:min-w-48">
             <button type="button" onClick={onCreateTransaction} className="button-primary px-3">
@@ -1074,7 +1083,7 @@ function Dashboard({
                 <div className="min-w-0">
                   <p className="label">{card.label}</p>
                 </div>
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-black/10 ${card.tone}`}>
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-line ${card.tone}`}>
                   <Icon size={20} aria-hidden />
                 </div>
               </div>
@@ -1165,7 +1174,7 @@ function Onboarding({
           const Icon = step.icon;
           return (
             <article key={step.title} className="soft-card">
-              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-mint text-ink">
+              <div className="flex h-10 w-10 items-center justify-center rounded-md bg-moss text-white">
                 <Icon size={19} aria-hidden />
               </div>
               <h3 className="mt-3 text-base font-bold">{step.title}</h3>
@@ -1306,9 +1315,9 @@ function AddTransaction({
         }
       />
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-        <form onSubmit={submit} className={`panel space-y-5 p-4 sm:p-5 ${isEditing ? "border-moss/50 ring-2 ring-mint" : ""}`}>
+        <form onSubmit={submit} className={`panel space-y-5 p-4 sm:p-5 ${isEditing ? "border-accent ring-2 ring-accent/15" : ""}`}>
           {isEditing ? (
-            <div className="rounded-md border border-moss/30 bg-mint px-3 py-2 text-sm font-semibold text-ink">{ui.add.editMode}</div>
+            <div className="rounded-md border border-line bg-mint px-3 py-2 text-sm font-semibold text-moss">{ui.add.editMode}</div>
           ) : null}
           {showSupplierOverpaymentWarning || showNegativeCashWarning ? (
             <div className="space-y-2">
@@ -1495,9 +1504,9 @@ function Reports({
 
       <section className="panel overflow-hidden p-4 sm:p-5">
         <ReportTitle title={ui.reports.trial} />
-        <div className="max-w-full overflow-x-auto rounded-md border border-black/10">
+        <div className="max-w-full overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[640px] text-left text-xs sm:text-sm">
-            <thead className="border-b border-black/10 text-xs uppercase text-moss">
+            <thead className="border-b border-line text-xs uppercase text-moss">
               <tr>
                 <th className="py-3 pl-3 pr-3">{ui.reports.account}</th>
                 <th className="py-3 pr-3">{ui.reports.type}</th>
@@ -1509,7 +1518,7 @@ function Reports({
             <tbody>
               {periodBalances.length ? (
                 periodBalances.map((line) => (
-                  <tr key={line.account} className="border-b border-black/5">
+                  <tr key={line.account} className="border-b border-line">
                     <td className="py-3 pl-3 pr-3 font-semibold">{translateAccountName(line.account, language)}</td>
                     <td className="py-3 pr-3">{ui.accountTypes[line.accountType]}</td>
                     <td className="py-3 pr-3">
@@ -1591,9 +1600,9 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
               ? { title: lesson.title.replace(/\s*\(.+\)$/, ""), text: lesson.text }
               : (englishLessons[lesson.title] ?? { title: lesson.title, text: lesson.text });
           return (
-            <article key={lesson.title} className="panel p-4 transition hover:border-moss/40 sm:p-5">
+            <article key={lesson.title} className="panel p-4 transition hover:border-accent sm:p-5">
               <div className="mb-3 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-mint text-ink">
+                <div className="flex h-10 w-10 items-center justify-center rounded-md bg-moss text-white">
                   <Icon size={19} aria-hidden />
                 </div>
                 <h2 className="text-base font-bold">{lessonContent.title}</h2>
@@ -1605,7 +1614,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
       </div>
 
       <section className="panel p-4 sm:p-6">
-        <div className="flex flex-col gap-4 border-b border-black/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-4 border-b border-line pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="label">{ui.learn.quiz}</p>
             <h2 className="mt-1 text-xl font-bold">{ui.learn.practice}</h2>
@@ -1628,11 +1637,11 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
               const choiceIsSelected = choice === selectedAnswer;
               const answerClass = hasAnswered
                 ? choiceIsCorrect
-                  ? "border-moss bg-mint text-ink"
+                  ? "border-accent bg-mint text-ink"
                   : choiceIsSelected
                     ? "border-clay bg-white text-clay"
-                    : "border-black/10 bg-white text-moss"
-                : "border-black/10 bg-white text-ink hover:border-moss hover:bg-mint";
+                    : "border-line bg-white text-moss"
+                : "border-line bg-white text-ink hover:border-accent hover:bg-mint";
 
               return (
                 <button
@@ -1651,8 +1660,8 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
         </div>
 
         {hasAnswered ? (
-          <div className={`flex gap-3 border p-4 ${isCorrect ? "border-moss bg-mint" : "border-clay bg-white"}`} style={{ borderRadius: 8 }}>
-            <CheckCircle2 className={isCorrect ? "mt-0.5 shrink-0 text-moss" : "mt-0.5 shrink-0 text-clay"} size={20} aria-hidden />
+          <div className={`flex gap-3 border p-4 ${isCorrect ? "border-accent bg-mint" : "border-clay bg-white"}`} style={{ borderRadius: 8 }}>
+            <CheckCircle2 className={isCorrect ? "mt-0.5 shrink-0 text-accent" : "mt-0.5 shrink-0 text-clay"} size={20} aria-hidden />
             <div>
               <p className={`font-bold ${isCorrect ? "text-ink" : "text-clay"}`}>
                 {isCorrect ? ui.learn.correct : `${ui.learn.incorrect}: ${question.correctAnswer}`}
@@ -1686,7 +1695,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
 
 function ScoreItem({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="min-w-20 border border-black/10 bg-white px-2 py-3" style={{ borderRadius: 6 }}>
+    <div className="min-w-20 border border-line bg-white px-2 py-3" style={{ borderRadius: 6 }}>
       <p className="text-lg font-bold text-ink">{value}</p>
       <p className="text-[10px] font-semibold uppercase leading-4 text-moss">{label}</p>
     </div>
@@ -1744,7 +1753,7 @@ function CategoryPanel({ title, categories }: { title: string; categories: strin
       <h2 className="text-lg font-bold">{title}</h2>
       <div className="mt-4 flex flex-wrap gap-2">
         {categories.map((category) => (
-          <span key={category} className="border border-black/10 bg-mint px-3 py-2 text-sm font-semibold text-ink" style={{ borderRadius: 6 }}>
+          <span key={category} className="border border-line bg-mint px-3 py-2 text-sm font-semibold text-moss" style={{ borderRadius: 6 }}>
             {category}
           </span>
         ))}
@@ -1768,7 +1777,7 @@ function Header({
     <header className="panel flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
       <div>
         <p className="label">{eyebrow}</p>
-        <h2 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
+        <h2 className="mt-1 text-2xl font-bold text-moss sm:text-3xl">{title}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-moss">{subtitle}</p>
       </div>
       {action ? <div className="w-full sm:w-auto">{action}</div> : null}
@@ -1795,8 +1804,8 @@ function WarningMessage({ text }: { text: string }) {
 
 function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="space-y-4 border-b border-black/10 pb-5 last:border-b-0 last:pb-0">
-      <h3 className="text-sm font-bold uppercase text-ink">{title}</h3>
+    <section className="space-y-4 border-b border-line pb-5 last:border-b-0 last:pb-0">
+      <h3 className="text-sm font-bold uppercase text-moss">{title}</h3>
       {children}
     </section>
   );
@@ -1847,7 +1856,7 @@ function TransactionList({
               <div className="flex flex-wrap items-center gap-2">
                 <p className="font-bold">{transaction.label}</p>
                 {transaction.isSample ? (
-                  <span className="border border-moss/30 bg-mint px-2 py-1 text-[10px] font-bold uppercase text-moss" style={{ borderRadius: 6 }}>
+                  <span className="border border-accent/40 bg-mint px-2 py-1 text-[10px] font-bold uppercase text-moss" style={{ borderRadius: 6 }}>
                     {ui.sampleBadge}
                   </span>
                 ) : null}
@@ -1857,15 +1866,15 @@ function TransactionList({
               </p>
               <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
                 {transaction.category ? (
-                  <span className="border border-black/10 bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
+                  <span className="border border-line bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
                     {ui.transactionDetails.category}: {transaction.category}
                   </span>
                 ) : null}
-                <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+                <span className="border border-line bg-white px-2 py-1" style={{ borderRadius: 6 }}>
                   {ui.transactionDetails.payment}: {translatePaymentMethod(transaction.paymentMethod, language)}
                 </span>
                 {transaction.partyName ? (
-                  <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+                  <span className="border border-line bg-white px-2 py-1" style={{ borderRadius: 6 }}>
                     {ui.transactionDetails.party}: {transaction.partyName}
                   </span>
                 ) : null}
@@ -1914,15 +1923,15 @@ function AccountingExplanation({ transaction, ui, language }: { transaction: Tra
         <h2 className="mt-1 text-xl font-bold">{ui.transactionDetails.changed}</h2>
         <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
           {transaction.category ? (
-            <span className="border border-black/10 bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
+            <span className="border border-line bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
               {ui.transactionDetails.category}: {transaction.category}
             </span>
           ) : null}
-          <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+          <span className="border border-line bg-white px-2 py-1" style={{ borderRadius: 6 }}>
             {ui.transactionDetails.payment}: {translatePaymentMethod(transaction.paymentMethod, language)}
           </span>
           {transaction.partyName ? (
-            <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+            <span className="border border-line bg-white px-2 py-1" style={{ borderRadius: 6 }}>
               {ui.transactionDetails.party}: {transaction.partyName}
             </span>
           ) : null}
@@ -1978,9 +1987,9 @@ function JournalTable({
   language: Language;
 }) {
   return (
-    <div className="max-w-full overflow-x-auto rounded-md border border-black/10">
+    <div className="max-w-full overflow-x-auto rounded-md border border-line">
       <table className="w-full min-w-[520px] text-left text-xs sm:text-sm">
-        <thead className="border-b border-black/10 text-xs uppercase text-moss">
+        <thead className="border-b border-line text-xs uppercase text-moss">
           <tr>
             <th className="py-3 pl-3 pr-3">{ui.reports.account}</th>
             <th className="py-3 pr-3">{ui.reports.type}</th>
@@ -1990,7 +1999,7 @@ function JournalTable({
         </thead>
         <tbody>
           {journal.map((line) => (
-            <tr key={`${line.account}-${line.debit}-${line.credit}`} className="border-b border-black/5">
+            <tr key={`${line.account}-${line.debit}-${line.credit}`} className="border-b border-line">
               <td className="py-3 pl-3 pr-3 font-semibold">{translateAccountName(line.account, language)}</td>
               <td className="py-3 pr-3">{ui.accountTypes[line.accountType]}</td>
               <td className="py-3 pr-3 text-right">{line.debit ? formatCurrency(line.debit) : "-"}</td>
@@ -2036,7 +2045,7 @@ function ReportGroup({
 
 function ReportLine({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) {
   return (
-    <div className={`flex items-center justify-between gap-4 border-b border-black/5 py-3 ${strong ? "font-bold text-ink" : "text-sm text-moss"}`}>
+    <div className={`flex items-center justify-between gap-4 border-b border-line py-3 ${strong ? "font-bold text-ink" : "text-sm text-moss"}`}>
       <span className="min-w-0">{label}</span>
       <span className="shrink-0 text-right">{formatCurrency(value)}</span>
     </div>
