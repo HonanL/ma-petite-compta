@@ -87,7 +87,7 @@ const navigation = [
 
 const cashAccountName = "Encaisse (Cash)";
 const accountsPayableName = "Comptes fournisseurs (Accounts Payable)";
-const logoPath = "/logo-ma-petite-compta.png";
+const logoPath = "/logo-ma-petite-compta.png?v=20260604";
 
 const getAccountBalance = (transactions: Transaction[], accountName: string) =>
   calculateAccountBalances(transactions).find((balance) => balance.account === accountName)?.balance ?? 0;

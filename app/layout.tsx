@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: "Ma Petite Compta",
   description: "MVP de comptabilité simple pour petits entrepreneurs francophones",
   icons: {
-    icon: "/logo-ma-petite-compta.png",
-    apple: "/logo-ma-petite-compta.png"
+    icon: "/logo-ma-petite-compta.png?v=20260604",
+    apple: "/logo-ma-petite-compta.png?v=20260604"
   }
 };
 
