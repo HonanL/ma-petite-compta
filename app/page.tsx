@@ -29,7 +29,6 @@ import { ChangeEvent, FormEvent, useMemo, useRef, useState } from "react";
 import {
   AccountType,
   accountNormalSide,
-  accountTypeLabels,
   calculateAccountBalances,
   calculateSummary,
   createTransaction,
@@ -49,11 +48,21 @@ import {
   getBusinessProfileDefinition
 } from "@/lib/businessProfile";
 import { createBackup, getBackupFilename, parseBackup } from "@/lib/backup";
+import {
+  Language,
+  transactionKindLabels,
+  translateAccountName,
+  translatePaymentMethod,
+  translateStatementName,
+  translations
+} from "@/lib/i18n";
+import { useLanguage } from "@/lib/useLanguage";
 import { useBusinessProfile } from "@/lib/useBusinessProfile";
 import { useTransactions } from "@/lib/useTransactions";
 
 type Tab = "dashboard" | "add" | "reports" | "learn" | "profile";
 type PeriodPreset = "all" | "current-month" | "last-month" | "current-year" | "custom";
+type AppTranslations = (typeof translations)[Language];
 
 type PeriodState = {
   preset: PeriodPreset;
@@ -62,7 +71,7 @@ type PeriodState = {
 };
 
 type QuizQuestion = {
-  type: "Type de compte" | "Débit ou crédit" | "Analyse de transaction";
+  type: string;
   prompt: string;
   choices: string[];
   correctAnswer: string;
@@ -76,14 +85,6 @@ const navigation = [
   { id: "learn" as Tab, label: "Apprentissage", icon: GraduationCap },
   { id: "profile" as Tab, label: "Profil d'entreprise", icon: BriefcaseBusiness }
 ];
-
-const periodLabels: Record<PeriodPreset, string> = {
-  all: "Toutes les transactions",
-  "current-month": "Ce mois-ci",
-  "last-month": "Mois dernier",
-  "current-year": "Cette année",
-  custom: "Période personnalisée"
-};
 
 const lessons = [
   {
@@ -237,6 +238,148 @@ const quizQuestions: QuizQuestion[] = [
   }
 ];
 
+const englishQuizQuestions: QuizQuestion[] = [
+  {
+    type: "Account type",
+    prompt: "What type of account is Cash?",
+    choices: ["Asset", "Liability", "Owner's Equity", "Revenue", "Expense"],
+    correctAnswer: "Asset",
+    explanation: "Cash is money available to the business. It is an asset."
+  },
+  {
+    type: "Account type",
+    prompt: "What type of account is Accounts Payable?",
+    choices: ["Asset", "Liability", "Owner's Equity", "Revenue", "Expense"],
+    correctAnswer: "Liability",
+    explanation: "Accounts Payable means amounts the business still has to pay. It is a liability."
+  },
+  {
+    type: "Account type",
+    prompt: "What type of account is Service Revenue?",
+    choices: ["Asset", "Liability", "Owner's Equity", "Revenue", "Expense"],
+    correctAnswer: "Revenue",
+    explanation: "Service revenue is earned when the business does work for a client."
+  },
+  {
+    type: "Account type",
+    prompt: "What type of account is Fuel Expense?",
+    choices: ["Asset", "Liability", "Owner's Equity", "Revenue", "Expense"],
+    correctAnswer: "Expense",
+    explanation: "Fuel used for work is a business cost. It is an expense."
+  },
+  {
+    type: "Account type",
+    prompt: "What type of account is Owner's Capital?",
+    choices: ["Asset", "Liability", "Owner's Equity", "Revenue", "Expense"],
+    correctAnswer: "Owner's Equity",
+    explanation: "Owner's capital represents the amount invested by the owner in the business."
+  },
+  {
+    type: "Debit or credit",
+    prompt: "Cash increases. Which side increases?",
+    choices: ["Debit", "Credit"],
+    correctAnswer: "Debit",
+    explanation: "Cash is an asset. When an asset increases, it is debited."
+  },
+  {
+    type: "Debit or credit",
+    prompt: "A bank debt increases. Which side increases?",
+    choices: ["Debit", "Credit"],
+    correctAnswer: "Credit",
+    explanation: "A bank debt is a liability. When a liability increases, it is credited."
+  },
+  {
+    type: "Debit or credit",
+    prompt: "Service revenue increases. Which side increases?",
+    choices: ["Debit", "Credit"],
+    correctAnswer: "Credit",
+    explanation: "Revenue normally increases on the credit side."
+  },
+  {
+    type: "Debit or credit",
+    prompt: "Advertising expense increases. Which side increases?",
+    choices: ["Debit", "Credit"],
+    correctAnswer: "Debit",
+    explanation: "Expenses normally increase on the debit side."
+  },
+  {
+    type: "Transaction analysis",
+    prompt: "A client pays 25 000 FCFA for a service. Which journal entry is correct?",
+    choices: [
+      "Debit Cash 25 000 FCFA / Credit Service Revenue 25 000 FCFA",
+      "Debit Service Revenue 25 000 FCFA / Credit Cash 25 000 FCFA",
+      "Debit Cash 25 000 FCFA / Credit Owner's Capital 25 000 FCFA"
+    ],
+    correctAnswer: "Debit Cash 25 000 FCFA / Credit Service Revenue 25 000 FCFA",
+    explanation: "The money received increases Cash with a debit, and the service earned increases revenue with a credit."
+  },
+  {
+    type: "Transaction analysis",
+    prompt: "The business pays 5 000 FCFA for fuel. Which journal entry is correct?",
+    choices: [
+      "Debit Fuel Expense 5 000 FCFA / Credit Cash 5 000 FCFA",
+      "Debit Cash 5 000 FCFA / Credit Fuel Expense 5 000 FCFA",
+      "Debit Supplies 5 000 FCFA / Credit Accounts Payable 5 000 FCFA"
+    ],
+    correctAnswer: "Debit Fuel Expense 5 000 FCFA / Credit Cash 5 000 FCFA",
+    explanation: "Fuel expense increases with a debit, and Cash decreases with a credit."
+  },
+  {
+    type: "Transaction analysis",
+    prompt: "The owner invests 100 000 FCFA. Which journal entry is correct?",
+    choices: [
+      "Debit Cash 100 000 FCFA / Credit Owner's Capital 100 000 FCFA",
+      "Debit Owner's Capital 100 000 FCFA / Credit Cash 100 000 FCFA",
+      "Debit Cash 100 000 FCFA / Credit Service Revenue 100 000 FCFA"
+    ],
+    correctAnswer: "Debit Cash 100 000 FCFA / Credit Owner's Capital 100 000 FCFA",
+    explanation: "The investment increases Cash with a debit and Owner's Capital with a credit."
+  }
+];
+
+const englishLessons: Record<string, { title: string; text: string }> = {
+  "Actifs (Assets)": {
+    title: "Assets",
+    text: "Assets are what the business owns or controls: cash, equipment, supplies, or amounts to receive."
+  },
+  "Passifs (Liabilities)": {
+    title: "Liabilities",
+    text: "Liabilities are debts: suppliers to pay, bank loans, or future obligations."
+  },
+  "Capitaux propres (Equity)": {
+    title: "Owner's Equity",
+    text: "Owner's equity represents the owner's share: investments, retained profit, and withdrawals."
+  },
+  "Revenus (Revenue)": {
+    title: "Revenue",
+    text: "Revenue comes from sales or services. It increases profit and therefore owner's equity."
+  },
+  "Dépenses (Expenses)": {
+    title: "Expenses",
+    text: "Expenses are the costs needed to earn revenue. They reduce profit."
+  },
+  "Débit et crédit (Debit and Credit)": {
+    title: "Debit and Credit",
+    text: "Every transaction has at least one debit and one credit. Assets and expenses increase with debits; liabilities, revenue, and owner's equity increase with credits."
+  },
+  "Écritures de journal (Journal Entries)": {
+    title: "Journal Entries",
+    text: "A journal entry shows which accounts change, with amounts recorded as debits and credits."
+  },
+  "Comptes en T (T-Accounts)": {
+    title: "T-Accounts",
+    text: "A T-account separates debits on the left and credits on the right to visualize an account balance."
+  },
+  "Balance de vérification (Trial Balance)": {
+    title: "Trial Balance",
+    text: "The trial balance lists all accounts. Total debits must equal total credits."
+  },
+  "États financiers (Financial Statements)": {
+    title: "Financial Statements",
+    text: "The income statement shows profit. The balance sheet shows assets, liabilities, and owner's equity at a given date."
+  }
+};
+
 const getPeriodRange = (period: PeriodState) => {
   const today = new Date();
 
@@ -305,28 +448,33 @@ const filterTransactionsUntilPeriodEnd = (transactions: Transaction[], period: P
   return transactions.filter((transaction) => hasUsableDate(transaction) && transaction.date <= endDate);
 };
 
-const getPeriodLabel = (period: PeriodState) => {
+const getPeriodLabel = (period: PeriodState, language: Language) => {
   const range = getPeriodRange(period);
+  const labels = translations[language].periods;
 
   if (period.preset === "custom") {
     if (range.startDate && range.endDate) {
-      return `${periodLabels.custom} : du ${formatFrenchDate(range.startDate)} au ${formatFrenchDate(range.endDate)}`;
+      return language === "fr"
+        ? `${labels.custom} : du ${formatFrenchDate(range.startDate)} au ${formatFrenchDate(range.endDate)}`
+        : `${labels.custom}: from ${range.startDate} to ${range.endDate}`;
     }
 
     if (range.startDate) {
-      return `${periodLabels.custom} : depuis le ${formatFrenchDate(range.startDate)}`;
+      return language === "fr" ? `${labels.custom} : depuis le ${formatFrenchDate(range.startDate)}` : `${labels.custom}: from ${range.startDate}`;
     }
 
     if (range.endDate) {
-      return `${periodLabels.custom} : jusqu'au ${formatFrenchDate(range.endDate)}`;
+      return language === "fr" ? `${labels.custom} : jusqu'au ${formatFrenchDate(range.endDate)}` : `${labels.custom}: until ${range.endDate}`;
     }
   }
 
   if (period.preset !== "all" && range.startDate && range.endDate) {
-    return `${periodLabels[period.preset]} : du ${formatFrenchDate(range.startDate)} au ${formatFrenchDate(range.endDate)}`;
+    return language === "fr"
+      ? `${labels[period.preset]} : du ${formatFrenchDate(range.startDate)} au ${formatFrenchDate(range.endDate)}`
+      : `${labels[period.preset]}: from ${range.startDate} to ${range.endDate}`;
   }
 
-  return periodLabels[period.preset];
+  return labels[period.preset];
 };
 
 const escapeCsvValue = (value: string | number | undefined) => {
@@ -357,25 +505,18 @@ const getTransactionsCsvFilename = (period: PeriodState) => {
   return `ma-petite-compta-transactions${dates ? `-${dates}` : "-periode-personnalisee"}.csv`;
 };
 
-const downloadTransactionsCsv = (transactions: Transaction[], period: PeriodState) => {
-  const headers = [
-    "Date",
-    "Type de transaction",
-    "Description",
-    "Catégorie",
-    "Méthode de paiement",
-    "Client/fournisseur",
-    "Notes",
-    "Montant",
-    "Devise"
-  ];
+const downloadTransactionsCsv = (transactions: Transaction[], period: PeriodState, language: Language) => {
+  const headers =
+    language === "fr"
+      ? ["Date", "Type de transaction", "Description", "Catégorie", "Méthode de paiement", "Client/fournisseur", "Notes", "Montant", "Devise"]
+      : ["Date", "Transaction type", "Description", "Category", "Payment method", "Client/supplier", "Notes", "Amount", "Currency"];
 
   const rows = transactions.map((transaction) => [
     transaction.date,
-    transactionTemplates.find((template) => template.kind === transaction.kind)?.title ?? transaction.kind,
+    transactionKindLabels[transaction.kind][language],
     transaction.label,
     transaction.category,
-    transaction.paymentMethod,
+    translatePaymentMethod(transaction.paymentMethod, language),
     transaction.partyName,
     transaction.note,
     transaction.amount,
@@ -392,12 +533,41 @@ const downloadTransactionsCsv = (transactions: Transaction[], period: PeriodStat
   URL.revokeObjectURL(url);
 };
 
+const getDisplayedExplanation = (transaction: Transaction, language: Language) => {
+  if (language === "fr") {
+    return transaction.generated.explanation;
+  }
+
+  const amount = formatCurrency(transaction.amount);
+
+  switch (transaction.kind) {
+    case "owner-investment":
+      return `The owner invests ${amount}. Cash increases and Owner's Capital increases by the same amount.`;
+    case "client-payment":
+      return `A client pays ${amount}. Cash increases and Service Revenue increases by the same amount.`;
+    case "cash-expense":
+      return `The business pays an expense of ${amount}. The expense increases and Cash decreases.`;
+    case "equipment-purchase":
+      return `The business buys equipment for ${amount}. Equipment increases and Cash decreases.`;
+    case "supplies-credit":
+      return `The business buys supplies on credit for ${amount}. Supplies increase and Accounts Payable increases.`;
+    case "supplier-payment":
+      return `The business pays a supplier ${amount}. Accounts Payable decreases and Cash decreases.`;
+    case "owner-withdrawal":
+      return `The owner withdraws ${amount}. Owner's Drawings increase and Cash decreases.`;
+    case "bank-loan":
+      return `The business receives a bank loan of ${amount}. Cash increases and Bank Loan increases.`;
+  }
+};
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>("dashboard");
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [period, setPeriod] = useState<PeriodState>({ preset: "current-month", startDate: "", endDate: "" });
   const [backupMessage, setBackupMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const backupInputRef = useRef<HTMLInputElement>(null);
+  const { language, setLanguage } = useLanguage();
+  const ui = translations[language];
   const {
     transactions,
     loaded,
@@ -416,13 +586,11 @@ export default function Home() {
   const periodBalances = useMemo(() => calculateAccountBalances(periodTransactions), [periodTransactions]);
   const balanceBalances = useMemo(() => calculateAccountBalances(balanceTransactions), [balanceTransactions]);
   const balanceSummary = useMemo(() => calculateSummary(balanceTransactions, null), [balanceTransactions]);
-  const periodLabel = getPeriodLabel(period);
+  const periodLabel = getPeriodLabel(period, language);
   const businessProfile = getBusinessProfileDefinition(profile);
 
   const confirmClearTransactions = () => {
-    const confirmed = window.confirm(
-      "Êtes-vous sûr de vouloir supprimer toutes les transactions ? Cette action est irréversible."
-    );
+    const confirmed = window.confirm(ui.confirmations.clearAll);
 
     if (confirmed) {
       clearTransactions();
@@ -458,7 +626,7 @@ export default function Home() {
     link.download = getBackupFilename();
     link.click();
     URL.revokeObjectURL(url);
-    setBackupMessage({ type: "success", text: "La sauvegarde a été exportée." });
+    setBackupMessage({ type: "success", text: ui.messages.backupExported });
   };
 
   const importBackup = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -474,14 +642,12 @@ export default function Home() {
       if (!parsed) {
         setBackupMessage({
           type: "error",
-          text: "Ce fichier n'est pas une sauvegarde valide de Ma Petite Compta."
+          text: ui.messages.invalidBackup
         });
         return;
       }
 
-      const confirmed = window.confirm(
-        "Importer cette sauvegarde remplacera vos données actuelles. Voulez-vous continuer ?"
-      );
+      const confirmed = window.confirm(ui.confirmations.importBackup);
       if (!confirmed) {
         return;
       }
@@ -490,11 +656,11 @@ export default function Home() {
       setProfile(parsed.businessProfile);
       setEditingTransaction(null);
       setTab("dashboard");
-      setBackupMessage({ type: "success", text: "La sauvegarde a été importée avec succès." });
+      setBackupMessage({ type: "success", text: ui.messages.backupImported });
     } catch {
       setBackupMessage({
         type: "error",
-        text: "Impossible de lire ce fichier. Vérifiez qu'il contient un JSON valide."
+        text: ui.messages.invalidJson
       });
     }
   };
@@ -509,8 +675,24 @@ export default function Home() {
                 <BadgeEuro size={23} aria-hidden />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-ink">Ma Petite Compta</h1>
-                <p className="text-xs text-moss">Comptabilité simple (Simple Accounting)</p>
+                <h1 className="text-xl font-bold text-ink">{ui.appName}</h1>
+                <p className="text-xs text-moss">{ui.appSubtitle}</p>
+              </div>
+            </div>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <p className="label">{ui.language}</p>
+              <div className="inline-flex border border-black/10 bg-white" style={{ borderRadius: 6 }}>
+                {(["fr", "en"] as Language[]).map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => setLanguage(option)}
+                    className={`min-h-9 px-3 text-xs font-bold ${language === option ? "bg-ink text-white" : "text-ink hover:bg-mint"}`}
+                    style={{ borderRadius: 5 }}
+                  >
+                    {option.toUpperCase()}
+                  </button>
+                ))}
               </div>
             </div>
           </div>
@@ -535,16 +717,16 @@ export default function Home() {
                   style={{ borderRadius: 6 }}
                 >
                   <Icon size={18} aria-hidden />
-                  {item.label}
+                  {ui.nav[item.id]}
                 </button>
               );
             })}
           </nav>
 
           <div className="mt-auto border-t border-black/10 pt-4">
-            <p className="label">Stockage (Storage)</p>
-            <p className="mt-2 text-sm text-moss">Les données restent dans ce navigateur avec localStorage.</p>
-            <p className="mt-2 text-sm font-semibold text-ink">Profil: {profile}</p>
+            <p className="label">{ui.storage}</p>
+            <p className="mt-2 text-sm text-moss">{ui.localStorage}</p>
+            <p className="mt-2 text-sm font-semibold text-ink">{ui.profileLabel}: {profile}</p>
             <button
               type="button"
               onClick={confirmClearTransactions}
@@ -552,7 +734,7 @@ export default function Home() {
               style={{ borderRadius: 6 }}
             >
               <RotateCcw size={16} aria-hidden />
-              Réinitialiser
+              {ui.actions.reset}
             </button>
             <div className="mt-3 grid gap-2">
               <button
@@ -562,7 +744,7 @@ export default function Home() {
                 style={{ borderRadius: 6 }}
               >
                 <Download size={16} aria-hidden />
-                Exporter une sauvegarde
+                {ui.actions.exportBackup}
               </button>
               <button
                 type="button"
@@ -571,7 +753,7 @@ export default function Home() {
                 style={{ borderRadius: 6 }}
               >
                 <Upload size={16} aria-hidden />
-                Importer une sauvegarde
+                {ui.actions.importBackup}
               </button>
               <input
                 ref={backupInputRef}
@@ -579,7 +761,7 @@ export default function Home() {
                 accept="application/json,.json"
                 onChange={importBackup}
                 className="hidden"
-                aria-label="Choisir une sauvegarde JSON"
+                aria-label={ui.actions.importBackup}
               />
             </div>
             {backupMessage ? (
@@ -592,7 +774,7 @@ export default function Home() {
 
         <section className="flex-1">
           {!loaded || !profileLoaded ? (
-            <div className="panel p-8">Chargement...</div>
+            <div className="panel p-8">{ui.loading}</div>
           ) : (
             <>
               {tab !== "add" && tab !== "learn" && tab !== "profile" ? (
@@ -601,7 +783,8 @@ export default function Home() {
                   setPeriod={setPeriod}
                   periodLabel={periodLabel}
                   transactionCount={periodTransactions.length}
-                  onExport={() => downloadTransactionsCsv(periodTransactions, period)}
+                  onExport={() => downloadTransactionsCsv(periodTransactions, period, language)}
+                  ui={ui}
                 />
               ) : null}
               {tab === "dashboard" && (
@@ -618,6 +801,8 @@ export default function Home() {
                   onRemoveSamples={removeSampleTransactions}
                   onEditTransaction={startEditingTransaction}
                   onDeleteTransaction={deleteTransaction}
+                  ui={ui}
+                  language={language}
                 />
               )}
               {tab === "add" && (
@@ -628,6 +813,8 @@ export default function Home() {
                   onCancelEdit={stopEditingTransaction}
                   editingTransaction={editingTransaction}
                   businessProfile={businessProfile}
+                  ui={ui}
+                  language={language}
                 />
               )}
               {tab === "reports" && (
@@ -637,10 +824,12 @@ export default function Home() {
                   balanceBalances={balanceBalances}
                   balanceSummary={balanceSummary}
                   periodLabel={periodLabel}
+                  ui={ui}
+                  language={language}
                 />
               )}
-              {tab === "learn" && <Learning />}
-              {tab === "profile" && <BusinessProfileView profile={profile} setProfile={setProfile} />}
+              {tab === "learn" && <Learning ui={ui} language={language} />}
+              {tab === "profile" && <BusinessProfileView profile={profile} setProfile={setProfile} ui={ui} />}
             </>
           )}
         </section>
@@ -654,20 +843,22 @@ function PeriodSelector({
   setPeriod,
   periodLabel,
   transactionCount,
-  onExport
+  onExport,
+  ui
 }: {
   period: PeriodState;
   setPeriod: (period: PeriodState) => void;
   periodLabel: string;
   transactionCount: number;
   onExport: () => void;
+  ui: AppTranslations;
 }) {
   return (
     <section className="panel no-print mb-5 p-4">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:items-end">
         <div>
           <label className="label" htmlFor="period-preset">
-            Période
+            {ui.reports.periodShown}
           </label>
           <select
             id="period-preset"
@@ -680,7 +871,9 @@ function PeriodSelector({
             }
             className="input mt-2"
           >
-            {Object.entries(periodLabels).map(([value, label]) => (
+            {Object.entries(ui.periods)
+              .filter(([value]) => !["start", "end"].includes(value))
+              .map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -690,7 +883,7 @@ function PeriodSelector({
 
         {period.preset === "custom" ? (
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Date de début" id="period-start">
+            <Field label={ui.periods.start} id="period-start">
               <input
                 id="period-start"
                 type="date"
@@ -699,7 +892,7 @@ function PeriodSelector({
                 className="input"
               />
             </Field>
-            <Field label="Date de fin" id="period-end">
+            <Field label={ui.periods.end} id="period-end">
               <input
                 id="period-end"
                 type="date"
@@ -712,7 +905,9 @@ function PeriodSelector({
         ) : null}
       </div>
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm font-semibold text-moss">Période affichée : {periodLabel}</p>
+        <p className="text-sm font-semibold text-moss">
+          {ui.reports.periodShown}: {periodLabel}
+        </p>
         <button
           type="button"
           onClick={onExport}
@@ -720,7 +915,7 @@ function PeriodSelector({
           style={{ borderRadius: 6 }}
         >
           <Download size={16} aria-hidden />
-          Exporter les transactions en CSV ({transactionCount})
+          {ui.actions.exportCsv} ({transactionCount})
         </button>
       </div>
     </section>
@@ -739,7 +934,9 @@ function Dashboard({
   onAddSamples,
   onRemoveSamples,
   onEditTransaction,
-  onDeleteTransaction
+  onDeleteTransaction,
+  ui,
+  language
 }: {
   summary: ReturnType<typeof calculateSummary>;
   transactions: Transaction[];
@@ -753,21 +950,24 @@ function Dashboard({
   onRemoveSamples: () => void;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
+  ui: AppTranslations;
+  language: Language;
 }) {
   const cards = [
-    { label: "Argent sur la période", english: "Period Cash", value: summary.cash, icon: Banknote },
-    { label: "Revenus de la période", english: "Period Revenue", value: summary.revenue, icon: ArrowUpRight },
-    { label: "Dépenses de la période", english: "Period Expenses", value: summary.expenses, icon: ArrowDownRight },
-    { label: "Bénéfice net de la période", english: "Period Net Income", value: summary.netIncome, icon: Scale },
-    { label: "Dettes de la période", english: "Period Liabilities", value: summary.liabilities, icon: Landmark },
-    { label: "Capitaux propres de la période", english: "Period Equity", value: summary.equity, icon: Building2 }
+    { label: ui.dashboard.cash, value: summary.cash, icon: Banknote },
+    { label: ui.dashboard.revenue, value: summary.revenue, icon: ArrowUpRight },
+    { label: ui.dashboard.expenses, value: summary.expenses, icon: ArrowDownRight },
+    { label: ui.dashboard.netIncome, value: summary.netIncome, icon: Scale },
+    { label: ui.dashboard.liabilities, value: summary.liabilities, icon: Landmark },
+    { label: ui.dashboard.equity, value: summary.equity, icon: Building2 }
   ];
 
   return (
     <div className="space-y-5">
       <Header
-        title="Tableau de bord"
-        subtitle="Vue rapide de votre petite entreprise avec les bases comptables visibles."
+        title={ui.dashboard.title}
+        subtitle={ui.dashboard.subtitle}
+        eyebrow={ui.applicationMvp}
         action={
           <button
             type="button"
@@ -776,7 +976,7 @@ function Dashboard({
             style={{ borderRadius: 6 }}
           >
             <Plus size={17} aria-hidden />
-            Nouvelle transaction
+            {ui.actions.newTransaction}
           </button>
         }
       />
@@ -787,14 +987,13 @@ function Dashboard({
           onCreateTransaction={onCreateTransaction}
           onOpenReports={onOpenReports}
           onAddSamples={onAddSamples}
+          ui={ui}
         />
       ) : (
         <section className="panel flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="font-bold">Données d&apos;exemple</p>
-            <p className="mt-1 text-sm text-moss">
-              Ajoutez quelques transactions fictives pour tester les rapports sans modifier vos données réelles.
-            </p>
+            <p className="font-bold">{ui.sampleDataTitle}</p>
+            <p className="mt-1 text-sm text-moss">{ui.sampleDataText}</p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
@@ -803,7 +1002,7 @@ function Dashboard({
               className="inline-flex min-h-10 items-center justify-center gap-2 border border-black/10 bg-white px-3 text-sm font-bold text-ink hover:border-moss"
               style={{ borderRadius: 6 }}
             >
-              Ajouter des exemples
+              {ui.actions.addSamples}
             </button>
             {hasSamples ? (
               <button
@@ -812,7 +1011,7 @@ function Dashboard({
                 className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-3 text-sm font-bold text-clay hover:border-clay"
                 style={{ borderRadius: 6 }}
               >
-                Supprimer les exemples
+                {ui.actions.removeSamples}
               </button>
             ) : null}
           </div>
@@ -827,7 +1026,6 @@ function Dashboard({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="label">{card.label}</p>
-                  <p className="text-xs text-moss">({card.english})</p>
                 </div>
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-mint text-ink">
                   <Icon size={20} aria-hidden />
@@ -842,15 +1040,19 @@ function Dashboard({
       <section className="panel p-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg font-bold">Dernières transactions</h2>
-            <p className="text-sm text-moss">Période affichée : {periodLabel}</p>
+            <h2 className="text-lg font-bold">{ui.dashboard.recent}</h2>
+            <p className="text-sm text-moss">
+              {ui.reports.periodShown}: {periodLabel}
+            </p>
           </div>
         </div>
         <TransactionList
           transactions={transactions.slice(0, 6)}
-          emptyMessage="Aucune transaction pour cette période. Ajoutez une transaction ou changez le filtre de période."
+          emptyMessage={ui.empty}
           onEditTransaction={onEditTransaction}
           onDeleteTransaction={onDeleteTransaction}
+          ui={ui}
+          language={language}
         />
       </section>
     </div>
@@ -861,34 +1063,36 @@ function Onboarding({
   onOpenProfile,
   onCreateTransaction,
   onOpenReports,
-  onAddSamples
+  onAddSamples,
+  ui
 }: {
   onOpenProfile: () => void;
   onCreateTransaction: () => void;
   onOpenReports: () => void;
   onAddSamples: () => void;
+  ui: AppTranslations;
 }) {
   const steps = [
     {
-      title: "Étape 1: Choisissez votre profil d'entreprise",
-      text: "Ma Petite Compta proposera des catégories adaptées à votre activité.",
+      title: ui.onboarding.step1,
+      text: ui.onboarding.step1Text,
       icon: BriefcaseBusiness,
       action: onOpenProfile,
-      button: "Choisir le profil"
+      button: ui.chooseProfile
     },
     {
-      title: "Étape 2: Ajoutez une transaction",
-      text: "Enregistrez un revenu, une dépense, un investissement ou un achat.",
+      title: ui.onboarding.step2,
+      text: ui.onboarding.step2Text,
       icon: Plus,
       action: onCreateTransaction,
-      button: "Ajouter une transaction"
+      button: ui.add.title
     },
     {
-      title: "Étape 3: Consultez vos rapports et apprenez la comptabilité",
-      text: "Vos écritures alimentent automatiquement le tableau de bord et les rapports.",
+      title: ui.onboarding.step3,
+      text: ui.onboarding.step3Text,
       icon: FileBarChart2,
       action: onOpenReports,
-      button: "Voir les rapports"
+      button: ui.viewReports
     }
   ];
 
@@ -896,11 +1100,9 @@ function Onboarding({
     <section className="panel p-4 sm:p-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="label">Bienvenue</p>
-          <h2 className="mt-1 text-xl font-bold">Bienvenue dans Ma Petite Compta</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-moss">
-            Commencez par choisir votre profil d&apos;entreprise, puis ajoutez votre première transaction.
-          </p>
+          <p className="label">{ui.onboarding.label}</p>
+          <h2 className="mt-1 text-xl font-bold">{ui.onboarding.title}</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-moss">{ui.onboarding.text}</p>
         </div>
         <button
           type="button"
@@ -908,7 +1110,7 @@ function Onboarding({
           className="inline-flex min-h-11 items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white"
           style={{ borderRadius: 6 }}
         >
-          Ajouter des exemples
+          {ui.actions.addSamples}
         </button>
       </div>
 
@@ -955,13 +1157,17 @@ function AddTransaction({
   onUpdate,
   onCancelEdit,
   editingTransaction,
-  businessProfile
+  businessProfile,
+  ui,
+  language
 }: {
   onAdd: (transaction: Transaction) => void;
   onUpdate: (transaction: Transaction) => void;
   onCancelEdit: () => void;
   editingTransaction: Transaction | null;
   businessProfile: ReturnType<typeof getBusinessProfileDefinition>;
+  ui: AppTranslations;
+  language: Language;
 }) {
   const isEditing = Boolean(editingTransaction);
   const [kind, setKind] = useState<TransactionKind>(editingTransaction?.kind ?? "client-payment");
@@ -1025,8 +1231,9 @@ function AddTransaction({
   return (
     <div className="space-y-5">
       <Header
-        title={isEditing ? "Modifier la transaction" : "Ajouter une transaction"}
-        subtitle="Choisissez un scénario; l'application prépare l'écriture comptable automatiquement."
+        title={isEditing ? ui.add.editTitle : ui.add.title}
+        subtitle={ui.add.subtitle}
+        eyebrow={ui.applicationMvp}
         action={
           isEditing ? (
             <button
@@ -1035,7 +1242,7 @@ function AddTransaction({
               className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-4 text-sm font-bold text-ink hover:border-moss"
               style={{ borderRadius: 6 }}
             >
-              Annuler
+              {ui.actions.cancel}
             </button>
           ) : undefined
         }
@@ -1044,20 +1251,24 @@ function AddTransaction({
         <form onSubmit={submit} className="panel space-y-4 p-4">
           <div>
             <label className="label" htmlFor="kind">
-              Type de transaction
+              {ui.add.type}
             </label>
             <select id="kind" value={kind} onChange={(event) => setKind(event.target.value as TransactionKind)} className="input mt-2">
               {transactionTemplates.map((template) => (
                 <option key={template.kind} value={template.kind}>
-                  {template.title} ({template.english})
+                  {transactionKindLabels[template.kind][language]}
                 </option>
               ))}
             </select>
-            <p className="mt-2 text-sm text-moss">{transactionTemplates.find((template) => template.kind === kind)?.helper}</p>
+            <p className="mt-2 text-sm text-moss">
+              {language === "fr"
+                ? transactionTemplates.find((template) => template.kind === kind)?.helper
+                : transactionTemplates.find((template) => template.kind === kind)?.english}
+            </p>
           </div>
           <div>
             <label className="label" htmlFor="category">
-              Catégorie adaptée
+              {ui.add.category}
             </label>
             {categoryOptions.length ? (
               <>
@@ -1068,27 +1279,29 @@ function AddTransaction({
                     </option>
                   ))}
                 </select>
-                <p className="mt-2 text-sm text-moss">Suggestions pour le profil: {businessProfile.profile}.</p>
+                <p className="mt-2 text-sm text-moss">
+                  {ui.add.categorySuggestion}: {businessProfile.profile}.
+                </p>
               </>
             ) : (
               <p className="mt-2 text-sm text-moss">
-                Aucune catégorie recommandée pour ce type de transaction. La logique comptable reste inchangée.
+                {ui.add.categoryUnavailable}
               </p>
             )}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Date" id="date">
+            <Field label={ui.add.date} id="date">
               <input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="input" required />
             </Field>
-            <Field label="Montant en FCFA" id="amount">
+            <Field label={ui.add.amount} id="amount">
               <input id="amount" type="number" min="0" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} className="input" placeholder="Ex: 25 000" required />
             </Field>
           </div>
-          <Field label="Description" id="label">
+          <Field label={ui.add.description} id="label">
             <input id="label" value={label} onChange={(event) => setLabel(event.target.value)} className="input" placeholder="Ex: Assemblage meuble IKEA, Achat essence" required />
           </Field>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Méthode de paiement" id="payment-method">
+            <Field label={ui.add.payment} id="payment-method">
               <select
                 id="payment-method"
                 value={paymentMethod}
@@ -1097,12 +1310,12 @@ function AddTransaction({
               >
                 {paymentMethods.map((method) => (
                   <option key={method} value={method}>
-                    {method}
+                    {translatePaymentMethod(method, language)}
                   </option>
                 ))}
               </select>
             </Field>
-            <Field label="Client ou fournisseur facultatif" id="party-name">
+            <Field label={ui.add.party} id="party-name">
               <input
                 id="party-name"
                 value={partyName}
@@ -1112,16 +1325,16 @@ function AddTransaction({
               />
             </Field>
           </div>
-          <Field label="Note facultative" id="note">
+          <Field label={ui.add.note} id="note">
             <textarea id="note" value={note} onChange={(event) => setNote(event.target.value)} className="input min-h-24 resize-y" placeholder="Détail utile pour vous relire plus tard" />
           </Field>
           <button type="submit" className="inline-flex min-h-11 w-full items-center justify-center gap-2 bg-ink px-4 text-sm font-bold text-white" style={{ borderRadius: 6 }}>
             <CheckCircle2 size={17} aria-hidden />
-            {isEditing ? "Enregistrer les modifications" : "Enregistrer la transaction"}
+            {isEditing ? ui.actions.saveChanges : ui.actions.saveTransaction}
           </button>
         </form>
 
-        <AccountingExplanation transaction={preview} />
+        <AccountingExplanation transaction={preview} ui={ui} language={language} />
       </div>
     </div>
   );
@@ -1132,13 +1345,17 @@ function Reports({
   periodBalances,
   balanceBalances,
   balanceSummary,
-  periodLabel
+  periodLabel,
+  ui,
+  language
 }: {
   transactions: Transaction[];
   periodBalances: ReturnType<typeof calculateAccountBalances>;
   balanceBalances: ReturnType<typeof calculateAccountBalances>;
   balanceSummary: ReturnType<typeof calculateSummary>;
   periodLabel: string;
+  ui: AppTranslations;
+  language: Language;
 }) {
   const revenue = sum(periodBalances.filter((line) => line.accountType === "revenu").map((line) => line.balance));
   const expenses = sum(periodBalances.filter((line) => line.accountType === "dépense").map((line) => line.balance));
@@ -1153,12 +1370,15 @@ function Reports({
     <div className="print-report-area space-y-5">
       <div className="print-only">
         <h1>Ma Petite Compta</h1>
-        <p>Rapports comptables</p>
-        <p>Période affichée : {periodLabel}</p>
+        <p>{ui.reports.accountingReports}</p>
+        <p>
+          {ui.reports.periodShown}: {periodLabel}
+        </p>
       </div>
       <Header
-        title="Rapports"
-        subtitle="Trois rapports essentiels générés depuis vos écritures de journal."
+        title={ui.reports.title}
+        subtitle={ui.reports.subtitle}
+        eyebrow={ui.applicationMvp}
         action={
           <button
             type="button"
@@ -1167,58 +1387,58 @@ function Reports({
             style={{ borderRadius: 6 }}
           >
             <Printer size={17} aria-hidden />
-            Imprimer les rapports
+            {ui.actions.printReports}
           </button>
         }
       />
-      <p className="panel p-4 text-sm font-semibold text-moss">Période affichée : {periodLabel}</p>
+      <p className="panel p-4 text-sm font-semibold text-moss">
+        {ui.reports.periodShown}: {periodLabel}
+      </p>
       {!transactions.length ? (
-        <p className="panel p-4 text-sm font-semibold text-moss">
-          Aucune transaction pour cette période. Ajoutez une transaction ou changez le filtre de période.
-        </p>
+        <p className="panel p-4 text-sm font-semibold text-moss">{ui.empty}</p>
       ) : null}
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="panel p-4">
-          <ReportTitle title="État des résultats" english="Income Statement" />
-          <ReportLine label="Revenus (Revenue)" value={revenue} />
-          <ReportLine label="Dépenses (Expenses)" value={expenses} />
-          <ReportLine label="Bénéfice net (Net Income)" value={revenue - expenses} strong />
+          <ReportTitle title={ui.reports.income} />
+          <ReportLine label={ui.reports.revenue} value={revenue} />
+          <ReportLine label={ui.reports.expenses} value={expenses} />
+          <ReportLine label={ui.reports.netIncome} value={revenue - expenses} strong />
         </section>
 
         <section className="panel p-4">
-          <ReportTitle title="Bilan" english="Balance Sheet" />
-          <ReportGroup title="Actifs (Assets)" lines={assets} />
-          <ReportLine label="Total actifs (Total Assets)" value={balanceSummary.assets} strong />
-          <ReportGroup title="Passifs (Liabilities)" lines={liabilities} />
-          <ReportLine label="Total passifs (Total Liabilities)" value={balanceSummary.liabilities} strong />
-          <ReportGroup title="Capitaux propres (Equity)" lines={equity} />
-          <ReportLine label="Bénéfices non répartis (Retained Earnings)" value={balanceSummary.retainedEarnings} />
-          <ReportLine label="Total capitaux propres (Total Equity)" value={balanceSummary.equity} strong />
-          <ReportLine label="Passifs + capitaux propres" value={balanceSummary.liabilities + balanceSummary.equity} strong />
+          <ReportTitle title={ui.reports.balance} />
+          <ReportGroup title={ui.accountTypes.actif} lines={assets} ui={ui} language={language} />
+          <ReportLine label={ui.reports.totalAssets} value={balanceSummary.assets} strong />
+          <ReportGroup title={ui.accountTypes.passif} lines={liabilities} ui={ui} language={language} />
+          <ReportLine label={ui.reports.totalLiabilities} value={balanceSummary.liabilities} strong />
+          <ReportGroup title={ui.accountTypes["capitaux propres"]} lines={equity} ui={ui} language={language} />
+          <ReportLine label={ui.reports.retainedEarnings} value={balanceSummary.retainedEarnings} />
+          <ReportLine label={ui.reports.totalEquity} value={balanceSummary.equity} strong />
+          <ReportLine label={ui.reports.liabilitiesPlusEquity} value={balanceSummary.liabilities + balanceSummary.equity} strong />
         </section>
       </div>
 
       <section className="panel overflow-hidden p-4">
-        <ReportTitle title="Balance de vérification" english="Trial Balance" />
+        <ReportTitle title={ui.reports.trial} />
         <div className="overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
             <thead className="border-b border-black/10 text-xs uppercase text-moss">
               <tr>
-                <th className="py-3 pr-3">Compte</th>
-                <th className="py-3 pr-3">Type</th>
-                <th className="py-3 pr-3">Solde normal</th>
-                <th className="py-3 pr-3 text-right">Débit (Debit)</th>
-                <th className="py-3 pr-3 text-right">Crédit (Credit)</th>
+                <th className="py-3 pr-3">{ui.reports.account}</th>
+                <th className="py-3 pr-3">{ui.reports.type}</th>
+                <th className="py-3 pr-3">{ui.reports.normalBalance}</th>
+                <th className="py-3 pr-3 text-right">{ui.sides.debit}</th>
+                <th className="py-3 pr-3 text-right">{ui.sides.credit}</th>
               </tr>
             </thead>
             <tbody>
               {periodBalances.length ? (
                 periodBalances.map((line) => (
                   <tr key={line.account} className="border-b border-black/5">
-                    <td className="py-3 pr-3 font-semibold">{line.account}</td>
-                    <td className="py-3 pr-3">{accountTypeLabels[line.accountType]}</td>
+                    <td className="py-3 pr-3 font-semibold">{translateAccountName(line.account, language)}</td>
+                    <td className="py-3 pr-3">{ui.accountTypes[line.accountType]}</td>
                     <td className="py-3 pr-3">
-                      {accountNormalSide[line.accountType] === "debit" ? "Solde débiteur" : "Solde créditeur"}:{" "}
+                      {accountNormalSide[line.accountType] === "debit" ? ui.reports.debitBalance : ui.reports.creditBalance}:{" "}
                       {formatCurrency(line.balance)}
                     </td>
                     <td className="py-3 pr-3 text-right">{formatCurrency(line.debit)}</td>
@@ -1228,7 +1448,7 @@ function Reports({
               ) : (
                 <tr>
                   <td colSpan={5} className="py-5 text-center text-sm text-moss">
-                    Aucune transaction pour cette période. Ajoutez une transaction ou changez le filtre de période.
+                    {ui.empty}
                   </td>
                 </tr>
               )}
@@ -1236,7 +1456,7 @@ function Reports({
             <tfoot className="font-bold">
               <tr>
                 <td className="py-3 pr-3" colSpan={3}>
-                  Totaux
+                  {ui.reports.totals}
                 </td>
                 <td className="py-3 pr-3 text-right">{formatCurrency(totalDebits)}</td>
                 <td className="py-3 pr-3 text-right">{formatCurrency(totalCredits)}</td>
@@ -1245,20 +1465,21 @@ function Reports({
           </table>
         </div>
         <p className={`mt-3 text-sm font-semibold ${trialBalanceBalanced ? "text-moss" : "text-clay"}`}>
-          Balance {trialBalanceBalanced ? "équilibrée" : "non équilibrée"}: total des débits {formatCurrency(totalDebits)} et
-          total des crédits {formatCurrency(totalCredits)} ({transactions.length} transaction(s)).
+          {trialBalanceBalanced ? ui.reports.balanced : ui.reports.unbalanced}: {ui.reports.totalDebits}{" "}
+          {formatCurrency(totalDebits)} / {ui.reports.totalCredits} {formatCurrency(totalCredits)} ({transactions.length} transaction(s)).
         </p>
       </section>
     </div>
   );
 }
 
-function Learning() {
+function Learning({ ui, language }: { ui: AppTranslations; language: Language }) {
   const [questionIndex, setQuestionIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [correctAnswers, setCorrectAnswers] = useState(0);
   const [answeredQuestions, setAnsweredQuestions] = useState(0);
-  const question = quizQuestions[questionIndex];
+  const questions = language === "fr" ? quizQuestions : englishQuizQuestions;
+  const question = questions[questionIndex % questions.length];
   const hasAnswered = selectedAnswer !== null;
   const isCorrect = selectedAnswer === question.correctAnswer;
   const successRate = answeredQuestions ? Math.round((correctAnswers / answeredQuestions) * 100) : 0;
@@ -1273,7 +1494,7 @@ function Learning() {
   };
 
   const nextQuestion = () => {
-    setQuestionIndex((current) => (current + 1) % quizQuestions.length);
+    setQuestionIndex((current) => (current + 1) % questions.length);
     setSelectedAnswer(null);
   };
 
@@ -1286,19 +1507,23 @@ function Learning() {
 
   return (
     <div className="space-y-5">
-      <Header title="Mode apprentissage" subtitle="Des leçons courtes pour comprendre ce que chaque transaction fait à vos comptes." />
+      <Header title={ui.learn.title} subtitle={ui.learn.subtitle} eyebrow={ui.applicationMvp} />
       <div className="grid gap-4 md:grid-cols-2">
         {lessons.map((lesson) => {
           const Icon = lesson.icon;
+          const lessonContent =
+            language === "fr"
+              ? { title: lesson.title.replace(/\s*\(.+\)$/, ""), text: lesson.text }
+              : (englishLessons[lesson.title] ?? { title: lesson.title, text: lesson.text });
           return (
             <article key={lesson.title} className="panel p-4">
               <div className="mb-3 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-md bg-mint text-ink">
                   <Icon size={19} aria-hidden />
                 </div>
-                <h2 className="text-base font-bold">{lesson.title}</h2>
+                <h2 className="text-base font-bold">{lessonContent.title}</h2>
               </div>
-              <p className="text-sm leading-6 text-moss">{lesson.text}</p>
+              <p className="text-sm leading-6 text-moss">{lessonContent.text}</p>
             </article>
           );
         })}
@@ -1307,16 +1532,16 @@ function Learning() {
       <section className="panel p-4 sm:p-5">
         <div className="flex flex-col gap-4 border-b border-black/10 pb-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="label">Quiz comptable</p>
-            <h2 className="mt-1 text-xl font-bold">Pratiquez les bases</h2>
+            <p className="label">{ui.learn.quiz}</p>
+            <h2 className="mt-1 text-xl font-bold">{ui.learn.practice}</h2>
             <p className="mt-2 text-sm text-moss">
-              Question {questionIndex + 1} sur {quizQuestions.length} · {question.type}
+              {ui.learn.question} {(questionIndex % questions.length) + 1} {ui.learn.of} {questions.length} · {question.type}
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2 text-center">
-            <ScoreItem label="Bonnes réponses" value={correctAnswers} />
-            <ScoreItem label="Répondues" value={answeredQuestions} />
-            <ScoreItem label="Réussite" value={`${successRate}%`} />
+            <ScoreItem label={ui.learn.score} value={correctAnswers} />
+            <ScoreItem label={ui.learn.answered} value={answeredQuestions} />
+            <ScoreItem label={ui.learn.success} value={`${successRate}%`} />
           </div>
         </div>
 
@@ -1353,7 +1578,7 @@ function Learning() {
         {hasAnswered ? (
           <div className={`border p-4 ${isCorrect ? "border-moss bg-mint" : "border-clay bg-white"}`} style={{ borderRadius: 8 }}>
             <p className={`font-bold ${isCorrect ? "text-ink" : "text-clay"}`}>
-              {isCorrect ? "Correct." : `Incorrect. La bonne réponse est : ${question.correctAnswer}`}
+              {isCorrect ? ui.learn.correct : `${ui.learn.incorrect}: ${question.correctAnswer}`}
             </p>
             <p className="mt-2 text-sm leading-6 text-moss">{question.explanation}</p>
           </div>
@@ -1366,7 +1591,7 @@ function Learning() {
             className="inline-flex min-h-10 items-center justify-center border border-black/10 bg-white px-4 text-sm font-bold text-ink hover:border-moss"
             style={{ borderRadius: 6 }}
           >
-            Recommencer le quiz
+            {ui.actions.restartQuiz}
           </button>
           <button
             type="button"
@@ -1375,7 +1600,7 @@ function Learning() {
             className="inline-flex min-h-10 items-center justify-center bg-ink px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-40"
             style={{ borderRadius: 6 }}
           >
-            Question suivante
+            {ui.actions.nextQuestion}
           </button>
         </div>
       </section>
@@ -1394,23 +1619,26 @@ function ScoreItem({ label, value }: { label: string; value: string | number }) 
 
 function BusinessProfileView({
   profile,
-  setProfile
+  setProfile,
+  ui
 }: {
   profile: BusinessProfile;
   setProfile: (profile: BusinessProfile) => void;
+  ui: AppTranslations;
 }) {
   const selectedProfile = getBusinessProfileDefinition(profile);
 
   return (
     <div className="space-y-5">
       <Header
-        title="Profil d'entreprise"
-        subtitle="Ce profil aide Ma Petite Compta à proposer des catégories adaptées à votre activité."
+        title={ui.profile.title}
+        subtitle={ui.profile.subtitle}
+        eyebrow={ui.applicationMvp}
       />
 
       <section className="panel p-4">
         <label className="label" htmlFor="business-profile">
-          Type de business
+          {ui.profile.type}
         </label>
         <select
           id="business-profile"
@@ -1427,8 +1655,8 @@ function BusinessProfileView({
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <CategoryPanel title="Revenus proposés" categories={selectedProfile.revenues} />
-        <CategoryPanel title="Dépenses proposées" categories={selectedProfile.expenses} />
+        <CategoryPanel title={ui.profile.revenues} categories={selectedProfile.revenues} />
+        <CategoryPanel title={ui.profile.expenses} categories={selectedProfile.expenses} />
       </div>
     </div>
   );
@@ -1449,11 +1677,21 @@ function CategoryPanel({ title, categories }: { title: string; categories: strin
   );
 }
 
-function Header({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
+function Header({
+  title,
+  subtitle,
+  action,
+  eyebrow
+}: {
+  title: string;
+  subtitle: string;
+  action?: React.ReactNode;
+  eyebrow: string;
+}) {
   return (
     <header className="panel flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="label">Application MVP</p>
+        <p className="label">{eyebrow}</p>
         <h2 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">{title}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-moss">{subtitle}</p>
       </div>
@@ -1475,21 +1713,25 @@ function Field({ label, id, children }: { label: string; id: string; children: R
 
 function TransactionList({
   transactions,
-  emptyMessage = "Aucune transaction enregistrée.",
+  emptyMessage,
   onEditTransaction,
-  onDeleteTransaction
+  onDeleteTransaction,
+  ui,
+  language
 }: {
   transactions: Transaction[];
   emptyMessage?: string;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
+  ui: AppTranslations;
+  language: Language;
 }) {
   if (!transactions.length) {
-    return <p className="text-sm text-moss">{emptyMessage}</p>;
+    return <p className="text-sm text-moss">{emptyMessage ?? ui.empty}</p>;
   }
 
   const confirmDelete = (transaction: Transaction) => {
-    const confirmed = window.confirm(`Supprimer la transaction "${transaction.label}" ? Cette action est irréversible.`);
+    const confirmed = window.confirm(`${ui.confirmations.deleteOne} "${transaction.label}" ? ${ui.confirmations.irreversible}`);
 
     if (confirmed) {
       onDeleteTransaction(transaction.id);
@@ -1506,29 +1748,33 @@ function TransactionList({
                 <p className="font-bold">{transaction.label}</p>
                 {transaction.isSample ? (
                   <span className="border border-moss/30 bg-mint px-2 py-1 text-[10px] font-bold uppercase text-moss" style={{ borderRadius: 6 }}>
-                    Exemple
+                    {ui.sampleBadge}
                   </span>
                 ) : null}
               </div>
               <p className="text-sm text-moss">
-                {formatFrenchDate(transaction.date)} - {transactionTemplates.find((template) => template.kind === transaction.kind)?.title}
+                {formatFrenchDate(transaction.date)} - {transactionKindLabels[transaction.kind][language]}
               </p>
               <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
                 {transaction.category ? (
                   <span className="border border-black/10 bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
-                    Catégorie: {transaction.category}
+                    {ui.transactionDetails.category}: {transaction.category}
                   </span>
                 ) : null}
                 <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
-                  Paiement: {transaction.paymentMethod}
+                  {ui.transactionDetails.payment}: {translatePaymentMethod(transaction.paymentMethod, language)}
                 </span>
                 {transaction.partyName ? (
                   <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
-                    Client/fournisseur: {transaction.partyName}
+                    {ui.transactionDetails.party}: {transaction.partyName}
                   </span>
                 ) : null}
               </div>
-              {transaction.note ? <p className="mt-2 text-sm leading-6 text-moss">Note: {transaction.note}</p> : null}
+              {transaction.note ? (
+                <p className="mt-2 text-sm leading-6 text-moss">
+                  {ui.transactionDetails.note}: {transaction.note}
+                </p>
+              ) : null}
             </div>
             <div className="flex items-center gap-3 self-start">
               <p className="text-lg font-bold">{formatCurrency(transaction.amount)}</p>
@@ -1539,7 +1785,7 @@ function TransactionList({
                   className="inline-flex min-h-9 items-center justify-center border border-black/10 bg-white px-3 text-sm font-semibold text-ink hover:border-moss"
                   style={{ borderRadius: 6 }}
                 >
-                  Modifier
+                  {ui.actions.edit}
                 </button>
                 <button
                   type="button"
@@ -1547,94 +1793,108 @@ function TransactionList({
                   className="inline-flex min-h-9 items-center justify-center border border-black/10 bg-white px-3 text-sm font-semibold text-clay hover:border-clay"
                   style={{ borderRadius: 6 }}
                 >
-                  Supprimer
+                  {ui.actions.delete}
                 </button>
               </div>
             </div>
           </div>
-          <p className="mt-2 text-sm leading-6 text-moss">{transaction.generated.explanation}</p>
+          <p className="mt-2 text-sm leading-6 text-moss">{getDisplayedExplanation(transaction, language)}</p>
         </article>
       ))}
     </div>
   );
 }
 
-function AccountingExplanation({ transaction }: { transaction: Transaction }) {
+function AccountingExplanation({ transaction, ui, language }: { transaction: Transaction; ui: AppTranslations; language: Language }) {
   const debitTotal = sum(transaction.generated.journal.map((line) => line.debit));
   const creditTotal = sum(transaction.generated.journal.map((line) => line.credit));
 
   return (
     <section className="panel space-y-4 p-4">
       <div>
-        <p className="label">Explication automatique</p>
-        <h2 className="mt-1 text-xl font-bold">Ce que la transaction change</h2>
+        <p className="label">{ui.transactionDetails.explanation}</p>
+        <h2 className="mt-1 text-xl font-bold">{ui.transactionDetails.changed}</h2>
         <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
           {transaction.category ? (
             <span className="border border-black/10 bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
-              Catégorie: {transaction.category}
+              {ui.transactionDetails.category}: {transaction.category}
             </span>
           ) : null}
           <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
-            Paiement: {transaction.paymentMethod}
+            {ui.transactionDetails.payment}: {translatePaymentMethod(transaction.paymentMethod, language)}
           </span>
           {transaction.partyName ? (
             <span className="border border-black/10 bg-white px-2 py-1" style={{ borderRadius: 6 }}>
-              Client/fournisseur: {transaction.partyName}
+              {ui.transactionDetails.party}: {transaction.partyName}
             </span>
           ) : null}
         </div>
-        <p className="mt-2 text-sm leading-6 text-moss">{transaction.generated.explanation}</p>
+        <p className="mt-2 text-sm leading-6 text-moss">{getDisplayedExplanation(transaction, language)}</p>
       </div>
 
       <div>
-        <h3 className="mb-2 font-bold">Comptes affectés</h3>
+        <h3 className="mb-2 font-bold">{ui.transactionDetails.affectedAccounts}</h3>
         <div className="grid gap-2 sm:grid-cols-2">
           {transaction.generated.affectedAccounts.map((account) => (
             <div key={`${account.name}-${account.movement}`} className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
-              <p className="font-semibold">{account.name}</p>
-              <p className="text-sm text-moss">{accountTypeLabels[account.type]}</p>
-              <p className="text-sm text-moss">{account.movement}</p>
+              <p className="font-semibold">{translateAccountName(account.name, language)}</p>
+              <p className="text-sm text-moss">{ui.accountTypes[account.type]}</p>
+              <p className="text-sm text-moss">
+                {account.movement.includes("Débit") ? ui.sides.debit : ui.sides.credit}
+              </p>
             </div>
           ))}
         </div>
       </div>
 
-      <JournalTable journal={transaction.generated.journal} />
+      <JournalTable journal={transaction.generated.journal} ui={ui} language={language} />
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
-          <p className="label">Vérification</p>
+          <p className="label">{ui.transactionDetails.verification}</p>
           <p className="mt-1 font-bold">
             {formatCurrency(debitTotal)} = {formatCurrency(creditTotal)}
           </p>
-          <p className="text-sm text-moss">{transaction.generated.debitsEqualCredits ? "Total des débits = total des crédits" : "Les totaux ne sont pas équilibrés"}</p>
+          <p className="text-sm text-moss">
+            {transaction.generated.debitsEqualCredits ? ui.transactionDetails.equal : ui.transactionDetails.notEqual}
+          </p>
         </div>
         <div className="border border-black/10 bg-white p-3" style={{ borderRadius: 8 }}>
-          <p className="label">États financiers affectés</p>
-          <p className="mt-1 text-sm leading-6 text-moss">{transaction.generated.affectedStatements.join(", ")}</p>
+          <p className="label">{ui.transactionDetails.statements}</p>
+          <p className="mt-1 text-sm leading-6 text-moss">
+            {transaction.generated.affectedStatements.map((statement) => translateStatementName(statement, language)).join(", ")}
+          </p>
         </div>
       </div>
     </section>
   );
 }
 
-function JournalTable({ journal }: { journal: { account: string; accountType: AccountType; debit: number; credit: number }[] }) {
+function JournalTable({
+  journal,
+  ui,
+  language
+}: {
+  journal: { account: string; accountType: AccountType; debit: number; credit: number }[];
+  ui: AppTranslations;
+  language: Language;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full min-w-[520px] text-left text-sm">
         <thead className="border-b border-black/10 text-xs uppercase text-moss">
           <tr>
-            <th className="py-3 pr-3">Compte</th>
-            <th className="py-3 pr-3">Type</th>
-            <th className="py-3 pr-3 text-right">Débit</th>
-            <th className="py-3 pr-3 text-right">Crédit</th>
+            <th className="py-3 pr-3">{ui.reports.account}</th>
+            <th className="py-3 pr-3">{ui.reports.type}</th>
+            <th className="py-3 pr-3 text-right">{ui.sides.debit}</th>
+            <th className="py-3 pr-3 text-right">{ui.sides.credit}</th>
           </tr>
         </thead>
         <tbody>
           {journal.map((line) => (
             <tr key={`${line.account}-${line.debit}-${line.credit}`} className="border-b border-black/5">
-              <td className="py-3 pr-3 font-semibold">{line.account}</td>
-              <td className="py-3 pr-3">{accountTypeLabels[line.accountType]}</td>
+              <td className="py-3 pr-3 font-semibold">{translateAccountName(line.account, language)}</td>
+              <td className="py-3 pr-3">{ui.accountTypes[line.accountType]}</td>
               <td className="py-3 pr-3 text-right">{line.debit ? formatCurrency(line.debit) : "-"}</td>
               <td className="py-3 pr-3 text-right">{line.credit ? formatCurrency(line.credit) : "-"}</td>
             </tr>
@@ -1645,20 +1905,33 @@ function JournalTable({ journal }: { journal: { account: string; accountType: Ac
   );
 }
 
-function ReportTitle({ title, english }: { title: string; english: string }) {
+function ReportTitle({ title }: { title: string }) {
   return (
     <div className="mb-4">
       <h2 className="text-lg font-bold">{title}</h2>
-      <p className="text-sm text-moss">({english})</p>
     </div>
   );
 }
 
-function ReportGroup({ title, lines }: { title: string; lines: ReturnType<typeof calculateAccountBalances> }) {
+function ReportGroup({
+  title,
+  lines,
+  ui,
+  language
+}: {
+  title: string;
+  lines: ReturnType<typeof calculateAccountBalances>;
+  ui: AppTranslations;
+  language: Language;
+}) {
   return (
     <div className="mb-3">
       <p className="label mb-2">{title}</p>
-      {lines.length ? lines.map((line) => <ReportLine key={line.account} label={line.account} value={line.balance} />) : <p className="text-sm text-moss">Aucun compte.</p>}
+      {lines.length ? (
+        lines.map((line) => <ReportLine key={line.account} label={translateAccountName(line.account, language)} value={line.balance} />)
+      ) : (
+        <p className="text-sm text-moss">{ui.reports.noAccount}</p>
+      )}
     </div>
   );
 }
