@@ -40,13 +40,14 @@ export const translations = {
     dashboard: {
       title: "Tableau de bord",
       subtitle: "Vue rapide de votre petite entreprise avec les bases comptables visibles.",
-      cash: "Argent sur la période",
+      cash: "Argent disponible",
       revenue: "Revenus de la période",
       expenses: "Dépenses de la période",
       netIncome: "Bénéfice net de la période",
-      liabilities: "Dettes de la période",
-      equity: "Capitaux propres de la période",
-      recent: "Dernières transactions"
+      liabilities: "Dettes",
+      equity: "Capitaux propres",
+      recent: "Dernières transactions",
+      filterClarification: "Les revenus, dépenses et bénéfice net affichent la période sélectionnée. Les soldes affichent la situation cumulée."
     },
     add: {
       title: "Ajouter une transaction",
@@ -65,7 +66,11 @@ export const translations = {
       mainInfo: "Informations principales",
       paymentDetails: "Détails de paiement",
       notesSection: "Notes",
-      editMode: "Mode modification"
+      editMode: "Mode modification",
+      descriptionPlaceholder: "Ex: Assemblage meuble IKEA, Achat essence",
+      amountPlaceholder: "Ex: 25 000",
+      partyPlaceholder: "Ex: Client Dupont, Fournisseur quincaillerie",
+      notePlaceholder: "Détail utile pour vous relire plus tard"
     },
     reports: {
       title: "Rapports",
@@ -169,7 +174,12 @@ export const translations = {
       backupExported: "La sauvegarde a été exportée.",
       invalidBackup: "Ce fichier n'est pas une sauvegarde valide de Ma Petite Compta.",
       backupImported: "La sauvegarde a été importée avec succès.",
-      invalidJson: "Impossible de lire ce fichier. Vérifiez qu'il contient un JSON valide."
+      invalidJson: "Impossible de lire ce fichier. Vérifiez qu'il contient un JSON valide.",
+      ignoredInvalidTransactions: "Certaines transactions invalides ont été ignorées."
+    },
+    warnings: {
+      supplierOverpayment: "Attention: ce paiement dépasse le solde actuel des comptes fournisseurs.",
+      negativeCash: "Attention: cette transaction peut rendre votre encaisse négative."
     },
     accountTypes: {
       actif: "Actif",
@@ -216,13 +226,14 @@ export const translations = {
     dashboard: {
       title: "Dashboard",
       subtitle: "A quick view of your small business with accounting basics visible.",
-      cash: "Cash for the period",
+      cash: "Cash available",
       revenue: "Revenue for the period",
       expenses: "Expenses for the period",
       netIncome: "Net income for the period",
-      liabilities: "Liabilities for the period",
-      equity: "Owner's equity for the period",
-      recent: "Recent transactions"
+      liabilities: "Liabilities",
+      equity: "Owner's equity",
+      recent: "Recent transactions",
+      filterClarification: "Revenue, expenses, and net income show the selected period. Balances show the cumulative position."
     },
     add: {
       title: "Add transaction",
@@ -241,7 +252,11 @@ export const translations = {
       mainInfo: "Main information",
       paymentDetails: "Payment details",
       notesSection: "Notes",
-      editMode: "Edit mode"
+      editMode: "Edit mode",
+      descriptionPlaceholder: "Ex: IKEA furniture assembly, fuel purchase",
+      amountPlaceholder: "Ex: 25 000",
+      partyPlaceholder: "Ex: Client Dupont, hardware supplier",
+      notePlaceholder: "Useful detail for later review"
     },
     reports: {
       title: "Reports",
@@ -345,7 +360,12 @@ export const translations = {
       backupExported: "The backup has been exported.",
       invalidBackup: "This file is not a valid Ma Petite Compta backup.",
       backupImported: "The backup was imported successfully.",
-      invalidJson: "Unable to read this file. Check that it contains valid JSON."
+      invalidJson: "Unable to read this file. Check that it contains valid JSON.",
+      ignoredInvalidTransactions: "Some invalid transactions were ignored."
+    },
+    warnings: {
+      supplierOverpayment: "Warning: this payment exceeds the current accounts payable balance.",
+      negativeCash: "Warning: this transaction may make your cash balance negative."
     },
     accountTypes: {
       actif: "Asset",

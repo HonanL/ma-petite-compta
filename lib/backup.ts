@@ -1,6 +1,7 @@
 import { BusinessProfile, isBusinessProfile } from "@/lib/businessProfile";
 import { Transaction, formatLocalDateInput } from "@/lib/accounting";
-import { normalizeTransactions } from "@/lib/useTransactions";
+import { Language, isLanguage } from "@/lib/i18n";
+import { normalizeTransactionsWithReport } from "@/lib/useTransactions";
 
 export type AppBackup = {
   app: "Ma Petite Compta";
@@ -8,14 +9,17 @@ export type AppBackup = {
   exportedAt: string;
   transactions: Transaction[];
   businessProfile: BusinessProfile;
+  language?: Language;
+  ignoredTransactionCount?: number;
 };
 
-export const createBackup = (transactions: Transaction[], businessProfile: BusinessProfile): AppBackup => ({
+export const createBackup = (transactions: Transaction[], businessProfile: BusinessProfile, language: Language): AppBackup => ({
   app: "Ma Petite Compta",
   schemaVersion: 1,
   exportedAt: new Date().toISOString(),
   transactions,
-  businessProfile
+  businessProfile,
+  language
 });
 
 export const getBackupFilename = () => `ma-petite-compta-sauvegarde-${formatLocalDateInput()}.json`;
@@ -26,13 +30,14 @@ export const parseBackup = (value: unknown): AppBackup | null => {
   }
 
   const candidate = value as Partial<AppBackup>;
-  const transactions = normalizeTransactions(candidate.transactions);
+  const transactionsReport = normalizeTransactionsWithReport(candidate.transactions);
+  const language = isLanguage(candidate.language) ? candidate.language : undefined;
 
   if (
     candidate.app !== "Ma Petite Compta" ||
     candidate.schemaVersion !== 1 ||
     typeof candidate.exportedAt !== "string" ||
-    !transactions ||
+    !transactionsReport ||
     !isBusinessProfile(candidate.businessProfile)
   ) {
     return null;
@@ -42,7 +47,9 @@ export const parseBackup = (value: unknown): AppBackup | null => {
     app: "Ma Petite Compta",
     schemaVersion: 1,
     exportedAt: candidate.exportedAt,
-    transactions,
-    businessProfile: candidate.businessProfile
+    transactions: transactionsReport.transactions,
+    businessProfile: candidate.businessProfile,
+    language,
+    ignoredTransactionCount: transactionsReport.ignoredCount
   };
 };

@@ -29,21 +29,39 @@ const isValidDateInput = (value: unknown) => typeof value === "string" && /^\d{4
 const isPaymentMethod = (value: unknown): value is PaymentMethod =>
   typeof value === "string" && paymentMethods.includes(value as PaymentMethod);
 
-const isTransaction = (value: unknown): value is Transaction => {
+type NormalizableTransaction = Partial<Omit<Transaction, "amount">> & {
+  amount: number | string;
+  kind: TransactionKind;
+  label: string;
+};
+
+const getNumericAmount = (value: unknown) => {
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return Number(value.replace(/\s/g, ""));
+  }
+
+  return Number.NaN;
+};
+
+const isTransaction = (value: unknown): value is NormalizableTransaction => {
   if (!value || typeof value !== "object") {
     return false;
   }
 
   const candidate = value as Partial<Transaction>;
+  const amount = getNumericAmount(candidate.amount);
 
   return (
-    typeof candidate.id === "string" &&
+    (candidate.id === undefined || typeof candidate.id === "string") &&
     (candidate.date === undefined || isValidDateInput(candidate.date)) &&
     typeof candidate.label === "string" &&
     candidate.label.trim().length > 0 &&
-    typeof candidate.amount === "number" &&
-    Number.isFinite(candidate.amount) &&
-    candidate.amount > 0 &&
+    Number.isFinite(amount) &&
+    amount > 0 &&
     (candidate.category === undefined || typeof candidate.category === "string") &&
     (candidate.paymentMethod === undefined || isPaymentMethod(candidate.paymentMethod)) &&
     (candidate.partyName === undefined || typeof candidate.partyName === "string") &&
@@ -54,22 +72,42 @@ const isTransaction = (value: unknown): value is Transaction => {
   );
 };
 
-export const normalizeTransactions = (value: unknown): Transaction[] | null => {
-  if (!Array.isArray(value) || !value.every(isTransaction)) {
+export type NormalizedTransactionsResult = {
+  transactions: Transaction[];
+  ignoredCount: number;
+};
+
+export const normalizeTransactionsWithReport = (value: unknown): NormalizedTransactionsResult | null => {
+  if (!Array.isArray(value)) {
     return null;
   }
 
-  return value.map((transaction) => ({
-    ...transaction,
-    date: transaction.date ?? formatLocalDateInput(),
-    paymentMethod: transaction.paymentMethod ?? "Autre",
-    partyName: transaction.partyName ?? "",
-    category: transaction.category ?? "",
-    note: transaction.note ?? "",
-    isSample: transaction.isSample ?? false,
-    generated: generateAccounting(transaction.kind, transaction.amount)
-  }));
+  const validTransactions = value.filter(isTransaction);
+  const ignoredCount = value.length - validTransactions.length;
+
+  if (ignoredCount > 0 && process.env.NODE_ENV !== "production") {
+    console.warn(`${ignoredCount} invalid Ma Petite Compta transaction(s) ignored.`);
+  }
+
+  return {
+    transactions: validTransactions.map((transaction) => ({
+      ...transaction,
+      id: transaction.id ?? crypto.randomUUID(),
+      amount: getNumericAmount(transaction.amount),
+      date: transaction.date ?? formatLocalDateInput(),
+      paymentMethod: transaction.paymentMethod ?? "Autre",
+      partyName: transaction.partyName ?? "",
+      category: transaction.category ?? "",
+      note: transaction.note ?? "",
+      isSample: transaction.isSample ?? false,
+      generated: generateAccounting(transaction.kind, getNumericAmount(transaction.amount))
+    })),
+    ignoredCount
+  };
 };
+
+export const normalizeTransactions = (value: unknown): Transaction[] | null =>
+  normalizeTransactionsWithReport(value)?.transactions ?? null;
 
 const readStoredTransactions = () => {
   try {
@@ -78,7 +116,7 @@ const readStoredTransactions = () => {
       return null;
     }
 
-    return normalizeTransactions(JSON.parse(saved) as unknown) ?? [];
+    return normalizeTransactionsWithReport(JSON.parse(saved) as unknown)?.transactions ?? [];
   } catch {
     return [];
   }

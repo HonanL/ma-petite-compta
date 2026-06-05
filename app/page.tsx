@@ -33,7 +33,6 @@ import {
   calculateSummary,
   createTransaction,
   formatCurrency,
-  formatFrenchDate,
   formatLocalDateInput,
   PaymentMethod,
   paymentMethods,
@@ -85,6 +84,12 @@ const navigation = [
   { id: "learn" as Tab, label: "Apprentissage", icon: GraduationCap },
   { id: "profile" as Tab, label: "Profil d'entreprise", icon: BriefcaseBusiness }
 ];
+
+const cashAccountName = "Encaisse (Cash)";
+const accountsPayableName = "Comptes fournisseurs (Accounts Payable)";
+
+const getAccountBalance = (transactions: Transaction[], accountName: string) =>
+  calculateAccountBalances(transactions).find((balance) => balance.account === accountName)?.balance ?? 0;
 
 const lessons = [
   {
@@ -419,6 +424,19 @@ const getPeriodRange = (period: PeriodState) => {
 
 const hasUsableDate = (transaction: Transaction) => /^\d{4}-\d{2}-\d{2}$/.test(transaction.date);
 
+const formatDisplayDate = (dateInput: string, language: Language) => {
+  const [year, month, day] = dateInput.split("-").map(Number);
+  if (!year || !month || !day) {
+    return dateInput;
+  }
+
+  return new Intl.DateTimeFormat(language === "fr" ? "fr-FR" : "en-US", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  }).format(new Date(year, month - 1, day));
+};
+
 const filterTransactionsByPeriod = (transactions: Transaction[], period: PeriodState) => {
   const range = getPeriodRange(period);
 
@@ -455,23 +473,23 @@ const getPeriodLabel = (period: PeriodState, language: Language) => {
   if (period.preset === "custom") {
     if (range.startDate && range.endDate) {
       return language === "fr"
-        ? `${labels.custom} : du ${formatFrenchDate(range.startDate)} au ${formatFrenchDate(range.endDate)}`
+        ? `${labels.custom} : du ${formatDisplayDate(range.startDate, language)} au ${formatDisplayDate(range.endDate, language)}`
         : `${labels.custom}: from ${range.startDate} to ${range.endDate}`;
     }
 
     if (range.startDate) {
-      return language === "fr" ? `${labels.custom} : depuis le ${formatFrenchDate(range.startDate)}` : `${labels.custom}: from ${range.startDate}`;
+      return language === "fr" ? `${labels.custom} : depuis le ${formatDisplayDate(range.startDate, language)}` : `${labels.custom}: from ${formatDisplayDate(range.startDate, language)}`;
     }
 
     if (range.endDate) {
-      return language === "fr" ? `${labels.custom} : jusqu'au ${formatFrenchDate(range.endDate)}` : `${labels.custom}: until ${range.endDate}`;
+      return language === "fr" ? `${labels.custom} : jusqu'au ${formatDisplayDate(range.endDate, language)}` : `${labels.custom}: until ${formatDisplayDate(range.endDate, language)}`;
     }
   }
 
   if (period.preset !== "all" && range.startDate && range.endDate) {
     return language === "fr"
-      ? `${labels[period.preset]} : du ${formatFrenchDate(range.startDate)} au ${formatFrenchDate(range.endDate)}`
-      : `${labels[period.preset]}: from ${range.startDate} to ${range.endDate}`;
+      ? `${labels[period.preset]} : du ${formatDisplayDate(range.startDate, language)} au ${formatDisplayDate(range.endDate, language)}`
+      : `${labels[period.preset]}: from ${formatDisplayDate(range.startDate, language)} to ${formatDisplayDate(range.endDate, language)}`;
   }
 
   return labels[period.preset];
@@ -582,7 +600,7 @@ export default function Home() {
   const { profile, loaded: profileLoaded, setProfile } = useBusinessProfile();
   const periodTransactions = useMemo(() => filterTransactionsByPeriod(transactions, period), [transactions, period]);
   const balanceTransactions = useMemo(() => filterTransactionsUntilPeriodEnd(transactions, period), [transactions, period]);
-  const summary = useMemo(() => calculateSummary(periodTransactions, null), [periodTransactions]);
+  const periodSummary = useMemo(() => calculateSummary(periodTransactions, null), [periodTransactions]);
   const periodBalances = useMemo(() => calculateAccountBalances(periodTransactions), [periodTransactions]);
   const balanceBalances = useMemo(() => calculateAccountBalances(balanceTransactions), [balanceTransactions]);
   const balanceSummary = useMemo(() => calculateSummary(balanceTransactions, null), [balanceTransactions]);
@@ -618,7 +636,7 @@ export default function Home() {
   };
 
   const exportBackup = () => {
-    const backup = createBackup(transactions, profile);
+    const backup = createBackup(transactions, profile, language);
     const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -654,9 +672,15 @@ export default function Home() {
 
       replaceTransactions(parsed.transactions);
       setProfile(parsed.businessProfile);
+      if (parsed.language) {
+        setLanguage(parsed.language);
+      }
       setEditingTransaction(null);
       setTab("dashboard");
-      setBackupMessage({ type: "success", text: ui.messages.backupImported });
+      setBackupMessage({
+        type: parsed.ignoredTransactionCount ? "error" : "success",
+        text: parsed.ignoredTransactionCount ? `${ui.messages.backupImported} ${ui.messages.ignoredInvalidTransactions}` : ui.messages.backupImported
+      });
     } catch {
       setBackupMessage({
         type: "error",
@@ -786,7 +810,8 @@ export default function Home() {
               ) : null}
               {tab === "dashboard" && (
                 <Dashboard
-                  summary={summary}
+                  periodSummary={periodSummary}
+                  balanceSummary={balanceSummary}
                   transactions={periodTransactions}
                   hasTransactions={transactions.length > 0}
                   hasSamples={transactions.some((transaction) => transaction.isSample)}
@@ -800,6 +825,7 @@ export default function Home() {
                   onDeleteTransaction={deleteTransaction}
                   ui={ui}
                   language={language}
+                  isPeriodFiltered={period.preset !== "all"}
                 />
               )}
               {tab === "add" && (
@@ -810,6 +836,7 @@ export default function Home() {
                   onCancelEdit={stopEditingTransaction}
                   editingTransaction={editingTransaction}
                   businessProfile={businessProfile}
+                  transactions={transactions}
                   ui={ui}
                   language={language}
                 />
@@ -919,7 +946,8 @@ function PeriodSelector({
 }
 
 function Dashboard({
-  summary,
+  periodSummary,
+  balanceSummary,
   transactions,
   hasTransactions,
   hasSamples,
@@ -932,9 +960,11 @@ function Dashboard({
   onEditTransaction,
   onDeleteTransaction,
   ui,
-  language
+  language,
+  isPeriodFiltered
 }: {
-  summary: ReturnType<typeof calculateSummary>;
+  periodSummary: ReturnType<typeof calculateSummary>;
+  balanceSummary: ReturnType<typeof calculateSummary>;
   transactions: Transaction[];
   hasTransactions: boolean;
   hasSamples: boolean;
@@ -948,14 +978,15 @@ function Dashboard({
   onDeleteTransaction: (id: string) => void;
   ui: AppTranslations;
   language: Language;
+  isPeriodFiltered: boolean;
 }) {
   const cards = [
-    { label: ui.dashboard.cash, value: summary.cash, icon: Banknote, tone: "bg-ink text-white" },
-    { label: ui.dashboard.revenue, value: summary.revenue, icon: ArrowUpRight, tone: "bg-mint text-ink" },
-    { label: ui.dashboard.expenses, value: summary.expenses, icon: ArrowDownRight, tone: "bg-white text-clay" },
-    { label: ui.dashboard.netIncome, value: summary.netIncome, icon: Scale, tone: "bg-mint text-ink" },
-    { label: ui.dashboard.liabilities, value: summary.liabilities, icon: Landmark, tone: "bg-white text-ink" },
-    { label: ui.dashboard.equity, value: summary.equity, icon: Building2, tone: "bg-white text-ink" }
+    { label: ui.dashboard.cash, value: balanceSummary.cash, icon: Banknote, tone: "bg-ink text-white" },
+    { label: ui.dashboard.revenue, value: periodSummary.revenue, icon: ArrowUpRight, tone: "bg-mint text-ink" },
+    { label: ui.dashboard.expenses, value: periodSummary.expenses, icon: ArrowDownRight, tone: "bg-white text-clay" },
+    { label: ui.dashboard.netIncome, value: periodSummary.netIncome, icon: Scale, tone: "bg-mint text-ink" },
+    { label: ui.dashboard.liabilities, value: balanceSummary.liabilities, icon: Landmark, tone: "bg-white text-ink" },
+    { label: ui.dashboard.equity, value: balanceSummary.equity, icon: Building2, tone: "bg-white text-ink" }
   ];
 
   return (
@@ -994,6 +1025,10 @@ function Dashboard({
           </div>
         </div>
       </section>
+
+      {isPeriodFiltered ? (
+        <p className="panel p-4 text-sm font-semibold leading-6 text-moss">{ui.dashboard.filterClarification}</p>
+      ) : null}
 
       {!hasTransactions ? (
         <Onboarding
@@ -1168,6 +1203,7 @@ function AddTransaction({
   onCancelEdit,
   editingTransaction,
   businessProfile,
+  transactions,
   ui,
   language
 }: {
@@ -1176,6 +1212,7 @@ function AddTransaction({
   onCancelEdit: () => void;
   editingTransaction: Transaction | null;
   businessProfile: ReturnType<typeof getBusinessProfileDefinition>;
+  transactions: Transaction[];
   ui: AppTranslations;
   language: Language;
 }) {
@@ -1191,6 +1228,10 @@ function AddTransaction({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(editingTransaction?.paymentMethod ?? "Virement");
   const [partyName, setPartyName] = useState(editingTransaction?.partyName ?? "");
   const [note, setNote] = useState(editingTransaction?.note ?? "");
+  const baseTransactions = useMemo(
+    () => transactions.filter((transaction) => transaction.id !== editingTransaction?.id),
+    [transactions, editingTransaction?.id]
+  );
   const preview = useMemo(
     () =>
       createTransaction({
@@ -1205,6 +1246,14 @@ function AddTransaction({
       }),
     [kind, amount, label, date, selectedCategory, paymentMethod, partyName, note]
   );
+  const currentCashBalance = useMemo(() => getAccountBalance(baseTransactions, cashAccountName), [baseTransactions]);
+  const currentAccountsPayableBalance = useMemo(() => getAccountBalance(baseTransactions, accountsPayableName), [baseTransactions]);
+  const previewCashMovement = preview.generated.journal
+    .filter((line) => line.account === cashAccountName)
+    .reduce((total, line) => total + line.debit - line.credit, 0);
+  const projectedCashBalance = currentCashBalance + previewCashMovement;
+  const showNegativeCashWarning = projectedCashBalance < 0;
+  const showSupplierOverpaymentWarning = kind === "supplier-payment" && (Number(amount) || 0) > currentAccountsPayableBalance;
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1261,6 +1310,14 @@ function AddTransaction({
           {isEditing ? (
             <div className="rounded-md border border-moss/30 bg-mint px-3 py-2 text-sm font-semibold text-ink">{ui.add.editMode}</div>
           ) : null}
+          {showSupplierOverpaymentWarning || showNegativeCashWarning ? (
+            <div className="space-y-2">
+              {showSupplierOverpaymentWarning ? (
+                <WarningMessage text={ui.warnings.supplierOverpayment} />
+              ) : null}
+              {showNegativeCashWarning ? <WarningMessage text={ui.warnings.negativeCash} /> : null}
+            </div>
+          ) : null}
           <FormSection title={ui.add.mainInfo}>
             <div>
               <label className="label" htmlFor="kind">
@@ -1284,11 +1341,11 @@ function AddTransaction({
                 <input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="input" required />
               </Field>
               <Field label={ui.add.amount} id="amount">
-                <input id="amount" type="number" min="0" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} className="input" placeholder="Ex: 25 000" required />
+                <input id="amount" type="number" min="0" step="1" value={amount} onChange={(event) => setAmount(event.target.value)} className="input" placeholder={ui.add.amountPlaceholder} required />
               </Field>
             </div>
             <Field label={ui.add.description} id="label">
-              <input id="label" value={label} onChange={(event) => setLabel(event.target.value)} className="input" placeholder="Ex: Assemblage meuble IKEA, Achat essence" required />
+              <input id="label" value={label} onChange={(event) => setLabel(event.target.value)} className="input" placeholder={ui.add.descriptionPlaceholder} required />
             </Field>
             <div>
               <label className="label" htmlFor="category">
@@ -1335,7 +1392,7 @@ function AddTransaction({
                   value={partyName}
                   onChange={(event) => setPartyName(event.target.value)}
                   className="input"
-                  placeholder="Ex: Client Dupont, Fournisseur quincaillerie"
+                  placeholder={ui.add.partyPlaceholder}
                 />
               </Field>
             </div>
@@ -1343,7 +1400,7 @@ function AddTransaction({
 
           <FormSection title={ui.add.notesSection}>
             <Field label={ui.add.note} id="note">
-              <textarea id="note" value={note} onChange={(event) => setNote(event.target.value)} className="input min-h-24 resize-y" placeholder="Détail utile pour vous relire plus tard" />
+              <textarea id="note" value={note} onChange={(event) => setNote(event.target.value)} className="input min-h-24 resize-y" placeholder={ui.add.notePlaceholder} />
             </Field>
           </FormSection>
 
@@ -1730,6 +1787,12 @@ function Field({ label, id, children }: { label: string; id: string; children: R
   );
 }
 
+function WarningMessage({ text }: { text: string }) {
+  return (
+    <p className="rounded-md border border-clay/30 bg-white px-3 py-2 text-sm font-semibold leading-6 text-clay">{text}</p>
+  );
+}
+
 function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="space-y-4 border-b border-black/10 pb-5 last:border-b-0 last:pb-0">
@@ -1790,7 +1853,7 @@ function TransactionList({
                 ) : null}
               </div>
               <p className="text-sm text-moss">
-                {formatFrenchDate(transaction.date)} - {transactionKindLabels[transaction.kind][language]}
+                {formatDisplayDate(transaction.date, language)} - {transactionKindLabels[transaction.kind][language]}
               </p>
               <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
                 {transaction.category ? (
