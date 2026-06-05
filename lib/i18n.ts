@@ -22,6 +22,27 @@ export const translations = {
       profile: "Profil d'entreprise",
       settings: "Paramètres"
     },
+    mobileMenu: {
+      menu: "Menu",
+      close: "Fermer",
+      dashboard: "Accueil",
+      transactions: "Transactions",
+      add: "Ajouter",
+      reports: "Rapports",
+      learn: "Apprendre",
+      settings: "ParamÃ¨tres"
+    },
+    landing: {
+      eyebrow: "Bienvenue",
+      start: "Commencer",
+      addTransaction: "Ajouter une transaction",
+      benefitsTitle: "GÃ©rez votre activitÃ© simplement",
+      benefits: {
+        transactions: "Enregistrez vos transactions",
+        journal: "Comprenez vos Ã©critures comptables",
+        reports: "Consultez vos rapports"
+      }
+    },
     actions: {
       newTransaction: "Nouvelle transaction",
       saveTransaction: "Enregistrer la transaction",
@@ -209,6 +230,27 @@ export const translations = {
       learn: "Learn",
       profile: "Business profile",
       settings: "Settings"
+    },
+    mobileMenu: {
+      menu: "Menu",
+      close: "Close",
+      dashboard: "Home",
+      transactions: "Transactions",
+      add: "Add",
+      reports: "Reports",
+      learn: "Learn",
+      settings: "Settings"
+    },
+    landing: {
+      eyebrow: "Welcome",
+      start: "Get Started",
+      addTransaction: "Add a transaction",
+      benefitsTitle: "Manage your activity simply",
+      benefits: {
+        transactions: "Record your transactions",
+        journal: "Understand your journal entries",
+        reports: "View your reports"
+      }
     },
     actions: {
       newTransaction: "New transaction",

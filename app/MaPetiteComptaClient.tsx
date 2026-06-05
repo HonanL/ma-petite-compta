@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Landmark,
   LayoutDashboard,
+  Menu,
   PiggyBank,
   Plus,
   Printer,
@@ -22,7 +23,8 @@ import {
   Scale,
   ShieldCheck,
   Upload,
-  WalletCards
+  WalletCards,
+  X
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -594,6 +596,7 @@ const getDisplayedExplanation = (transaction: Transaction, language: Language) =
 export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(activePage);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [period, setPeriod] = useState<PeriodState>({ preset: "current-month", startDate: "", endDate: "" });
   const [backupMessage, setBackupMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -623,6 +626,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
 
   const navigateTo = (nextTab: Tab) => {
     setTab(nextTab);
+    setMobileMenuOpen(false);
     router.push(tabRoutes[nextTab]);
   };
 
@@ -714,13 +718,24 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
         <aside className="panel no-print flex flex-col gap-4 p-3 sm:p-4 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] lg:w-72">
           <div>
             <div className="flex items-center justify-between gap-3 lg:items-start lg:justify-start">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-white shadow-soft">
-                <Image src={logoPath} alt="" width={48} height={48} className="h-full w-full object-cover" priority />
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-line bg-white shadow-soft">
+                  <Image src={logoPath} alt="" width={48} height={48} className="h-full w-full object-cover" priority />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h1 className="truncate text-xl font-bold text-ink">{ui.appName}</h1>
+                  <p className="truncate text-xs text-moss">{ui.appSubtitle}</p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <h1 className="text-xl font-bold text-ink">{ui.appName}</h1>
-                <p className="text-xs text-moss">{ui.appSubtitle}</p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                className="button-secondary min-h-11 px-3 lg:hidden"
+                aria-expanded={mobileMenuOpen}
+              >
+                <Menu size={18} aria-hidden />
+                {ui.mobileMenu.menu}
+              </button>
             </div>
             <div className="mt-4 flex items-center justify-between gap-2">
               <p className="label">{ui.language}</p>
@@ -740,7 +755,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
             </div>
           </div>
 
-          <nav className="grid grid-cols-6 gap-1 sm:gap-2 lg:grid-cols-1">
+          <nav className="hidden gap-2 lg:grid lg:grid-cols-1">
             {navigation.map((item) => {
               const Icon = item.icon;
               return (
@@ -754,7 +769,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                       setTab(item.id);
                     }
                   }}
-                  className={`flex min-h-14 flex-col items-center justify-center gap-1 px-2 py-2 text-center text-[11px] font-semibold leading-tight transition sm:min-h-11 sm:flex-row sm:justify-start sm:gap-3 sm:px-3 sm:text-left sm:text-sm ${
+                  className={`flex min-h-11 items-center justify-start gap-3 px-3 py-2 text-left text-sm font-semibold leading-tight transition ${
                     tab === item.id ? "bg-moss text-white shadow-sm" : "text-moss hover:bg-mint"
                   }`}
                   style={{ borderRadius: 6 }}
@@ -771,6 +786,60 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
             <p className="mt-2">{ui.localStorage}</p>
           </div>
         </aside>
+
+        {mobileMenuOpen ? (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <button
+              type="button"
+              className="absolute inset-0 bg-ink/45"
+              aria-label={ui.mobileMenu.close}
+              onClick={() => setMobileMenuOpen(false)}
+            />
+            <div className="absolute inset-x-3 bottom-3 rounded-lg border border-line bg-white p-4 shadow-xl">
+              <div className="mb-4 flex items-center justify-between gap-3">
+                <div>
+                  <p className="label">{ui.mobileMenu.menu}</p>
+                  <h2 className="text-lg font-bold text-moss">{ui.appName}</h2>
+                </div>
+                <button type="button" onClick={() => setMobileMenuOpen(false)} className="button-secondary min-h-11 px-3">
+                  <X size={18} aria-hidden />
+                  {ui.mobileMenu.close}
+                </button>
+              </div>
+              <nav className="grid gap-2">
+                {navigation.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = tab === item.id;
+                  const isAdd = item.id === "add";
+                  return (
+                    <Link
+                      key={item.id}
+                      href={item.href}
+                      onClick={() => {
+                        if (isAdd) {
+                          startNewTransaction();
+                        } else {
+                          setTab(item.id);
+                          setMobileMenuOpen(false);
+                        }
+                      }}
+                      className={`flex min-h-14 items-center gap-3 rounded-md border px-4 py-3 text-base font-bold transition ${
+                        isActive
+                          ? "border-moss bg-moss text-white"
+                          : isAdd
+                            ? "border-accent bg-mint text-ink hover:border-moss"
+                            : "border-line bg-white text-moss hover:bg-mint"
+                      }`}
+                    >
+                      <Icon size={20} aria-hidden />
+                      <span>{ui.mobileMenu[item.id]}</span>
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+        ) : null}
 
         <section className="flex-1">
           {!loaded || !profileLoaded ? (
