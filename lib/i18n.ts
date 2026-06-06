@@ -63,14 +63,19 @@ export const translations = {
     dashboard: {
       title: "Tableau de bord",
       subtitle: "Vue rapide de votre petite entreprise avec les bases comptables visibles.",
+      tagline: "Gérez votre activité avec des chiffres simples.",
       cash: "Argent disponible",
       revenue: "Revenus de la période",
       expenses: "Dépenses de la période",
-      netIncome: "Bénéfice net de la période",
+      netIncome: "Bénéfice net",
       liabilities: "Dettes",
       equity: "Capitaux propres",
       recent: "Dernières transactions",
-      filterClarification: "Les revenus, dépenses et bénéfice net affichent la période sélectionnée. Les soldes affichent la situation cumulée."
+      filterClarification: "Les revenus, dépenses et bénéfice net affichent la période sélectionnée. Les soldes affichent la situation cumulée.",
+      cashVsProfit: "L'argent disponible inclut les apports, prêts et paiements. Le bénéfice montre seulement les revenus moins les dépenses.",
+      healthPositive: "Votre activité est rentable sur cette période: les revenus sont supérieurs aux dépenses.",
+      healthZero: "Aucun bénéfice pour le moment sur cette période. Ajoutez des revenus ou vérifiez vos dépenses.",
+      healthNegative: "Les dépenses sont supérieures aux revenus sur cette période. Ce n'est pas grave, mais c'est un signal à surveiller."
     },
     add: {
       title: "Ajouter une transaction",
@@ -137,7 +142,11 @@ export const translations = {
       unbalanced: "Balance non équilibrée",
       totalDebits: "total des débits",
       totalCredits: "total des crédits",
-      noAccount: "Aucun compte."
+      noAccount: "Aucun compte.",
+      incomeSummary: "Ce rapport montre si votre activité a fait un bénéfice ou une perte pendant la période sélectionnée.",
+      balanceSummary: "Ce rapport montre ce que l'entreprise possède, ce qu'elle doit et la part du propriétaire.",
+      trialSummary: "Ce rapport vérifie que le total des débits est égal au total des crédits.",
+      cashProfitDifference: "Votre caisse peut augmenter grâce à des apports du propriétaire ou des emprunts, mais ces montants ne sont pas des revenus."
     },
     learn: {
       title: "Mode apprentissage",
@@ -301,14 +310,19 @@ export const translations = {
     dashboard: {
       title: "Dashboard",
       subtitle: "A quick view of your small business with accounting basics visible.",
+      tagline: "Manage your business with simple numbers.",
       cash: "Cash available",
-      revenue: "Revenue for the period",
-      expenses: "Expenses for the period",
-      netIncome: "Net income for the period",
+      revenue: "Period revenue",
+      expenses: "Period expenses",
+      netIncome: "Net profit",
       liabilities: "Liabilities",
       equity: "Owner's equity",
       recent: "Recent transactions",
-      filterClarification: "Revenue, expenses, and net income show the selected period. Balances show the cumulative position."
+      filterClarification: "Revenue, expenses, and net income show the selected period. Balances show the cumulative position.",
+      cashVsProfit: "Cash available includes owner investments, loans, and payments. Profit only shows revenue minus expenses.",
+      healthPositive: "Your business is profitable for this period: revenue is higher than expenses.",
+      healthZero: "There is no profit yet for this period. Add revenue or review your expenses.",
+      healthNegative: "Expenses are higher than revenue for this period. It is not scary, but it is a signal to watch."
     },
     add: {
       title: "Add transaction",
@@ -375,7 +389,11 @@ export const translations = {
       unbalanced: "Unbalanced trial balance",
       totalDebits: "total debits",
       totalCredits: "total credits",
-      noAccount: "No account."
+      noAccount: "No account.",
+      incomeSummary: "This shows if your business made a profit or loss during the selected period.",
+      balanceSummary: "This shows what the business owns, owes, and the owner's equity.",
+      trialSummary: "This checks that total debits equal total credits.",
+      cashProfitDifference: "Your cash can increase from owner investments or loans, but those are not revenue."
     },
     learn: {
       title: "Learn mode",

@@ -879,7 +879,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
           </div>
         ) : null}
 
-        <section className="flex-1">
+        <section className="flex-1 pt-1 sm:pt-2 lg:pt-0">
           {!loaded || !profileLoaded ? (
             <div className="panel p-8">{ui.loading}</div>
           ) : (
@@ -1116,6 +1116,18 @@ function Dashboard({
     { label: ui.dashboard.liabilities, value: balanceSummary.liabilities, icon: Landmark, tone: "bg-white text-ink" },
     { label: ui.dashboard.equity, value: balanceSummary.equity, icon: Building2, tone: "bg-white text-ink" }
   ];
+  const healthMessage =
+    periodSummary.netIncome > 0
+      ? ui.dashboard.healthPositive
+      : periodSummary.netIncome === 0
+        ? ui.dashboard.healthZero
+        : ui.dashboard.healthNegative;
+  const healthTone =
+    periodSummary.netIncome > 0
+      ? "border-accent bg-mint text-moss"
+      : periodSummary.netIncome === 0
+        ? "border-line bg-white text-moss"
+        : "border-clay/30 bg-white text-clay";
 
   return (
     <div className="space-y-5">
@@ -1135,19 +1147,21 @@ function Dashboard({
         }
       />
 
-      <section className="panel overflow-hidden p-5 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+      <section className="panel overflow-hidden p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex min-w-0 items-center gap-3">
             <Image
               src={logoPath}
               alt="Ma Petite Compta"
-              width={92}
-              height={92}
-              className="mb-4 h-16 w-16 rounded-md border border-line bg-white object-cover shadow-soft sm:h-20 sm:w-20"
+              width={56}
+              height={56}
+              className="h-12 w-12 shrink-0 rounded-md border border-line bg-white object-cover shadow-soft sm:h-14 sm:w-14"
               priority
             />
-            <p className="label">{ui.appName}</p>
-            <h2 className="mt-2 max-w-3xl text-2xl font-bold leading-tight text-moss sm:text-4xl">{ui.heroTagline}</h2>
+            <div className="min-w-0">
+              <p className="label">{ui.appName}</p>
+              <h2 className="text-lg font-bold leading-snug text-moss sm:text-xl">{ui.dashboard.tagline}</h2>
+            </div>
           </div>
           <div className="grid gap-2 sm:min-w-48 sm:grid-cols-2">
             <button type="button" onClick={onCreateTransaction} className="button-primary px-3">
@@ -1195,6 +1209,17 @@ function Dashboard({
             </article>
           );
         })}
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <section className="panel p-4 sm:p-5">
+          <p className="label">{ui.dashboard.cash}</p>
+          <h2 className="mt-1 text-lg font-bold text-ink">{ui.dashboard.cashVsProfit}</h2>
+        </section>
+        <section className={`rounded-md border p-4 sm:p-5 ${healthTone}`}>
+          <p className="label">{ui.dashboard.netIncome}</p>
+          <h2 className="mt-1 text-lg font-bold">{healthMessage}</h2>
+        </section>
       </div>
 
       <section className="panel p-4 sm:p-5">
@@ -1742,6 +1767,7 @@ function Reports({
       <p className="panel p-4 text-sm font-semibold text-moss">
         {ui.reports.periodShown}: {periodLabel}
       </p>
+      <p className="panel p-4 text-sm font-semibold leading-6 text-moss">{ui.reports.cashProfitDifference}</p>
       {!transactions.length ? (
         <EmptyState
           title={ui.emptyStates.reportsTitle}
@@ -1762,6 +1788,7 @@ function Reports({
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="panel p-4 sm:p-5">
           <ReportTitle title={ui.reports.income} />
+          <ReportSummary text={ui.reports.incomeSummary} />
           <ReportLine label={ui.reports.revenue} value={revenue} />
           <ReportLine label={ui.reports.expenses} value={expenses} />
           <ReportLine label={ui.reports.netIncome} value={revenue - expenses} strong />
@@ -1769,6 +1796,7 @@ function Reports({
 
         <section className="panel p-4 sm:p-5">
           <ReportTitle title={ui.reports.balance} />
+          <ReportSummary text={ui.reports.balanceSummary} />
           <ReportGroup title={ui.accountTypes.actif} lines={assets} ui={ui} language={language} />
           <ReportLine label={ui.reports.totalAssets} value={balanceSummary.assets} strong />
           <ReportGroup title={ui.accountTypes.passif} lines={liabilities} ui={ui} language={language} />
@@ -1782,6 +1810,7 @@ function Reports({
 
       <section className="panel overflow-hidden p-4 sm:p-5">
         <ReportTitle title={ui.reports.trial} />
+        <ReportSummary text={ui.reports.trialSummary} />
         <div className="max-w-full overflow-x-auto rounded-md border border-line">
           <table className="w-full min-w-[640px] text-left text-xs sm:text-sm">
             <thead className="border-b border-line text-xs uppercase text-moss">
@@ -2436,6 +2465,10 @@ function ReportTitle({ title }: { title: string }) {
       <h2 className="text-lg font-bold">{title}</h2>
     </div>
   );
+}
+
+function ReportSummary({ text }: { text: string }) {
+  return <p className="mb-4 rounded-md border border-line bg-mint px-3 py-2 text-sm leading-6 text-moss">{text}</p>;
 }
 
 function ReportGroup({
