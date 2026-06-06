@@ -14,6 +14,8 @@ import {
   GraduationCap,
   Landmark,
   LayoutDashboard,
+  LogOut,
+  Mail,
   Menu,
   PiggyBank,
   Plus,
@@ -30,7 +32,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, FormEvent, RefObject, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, RefObject, useEffect, useMemo, useRef, useState } from "react";
 import {
   AccountType,
   accountNormalSide,
@@ -66,6 +68,7 @@ import {
 import { useLanguage } from "@/lib/useLanguage";
 import { useBusinessProfile } from "@/lib/useBusinessProfile";
 import { useTransactions } from "@/lib/useTransactions";
+import { createClient as createSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase/client";
 
 type Tab = "dashboard" | "transactions" | "add" | "reports" | "learn" | "settings";
 type PeriodPreset = "all" | "current-month" | "last-month" | "current-year" | "custom";
@@ -2231,6 +2234,191 @@ function BusinessProfileView({
   );
 }
 
+function AuthSettings({ ui }: { ui: AppTranslations }) {
+  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [authEmail, setAuthEmail] = useState("");
+  const [authPassword, setAuthPassword] = useState("");
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [authMessage, setAuthMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [authLoading, setAuthLoading] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) {
+      return;
+    }
+
+    let isMounted = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (isMounted) {
+        setUserEmail(data.user?.email ?? null);
+      }
+    });
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user.email ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const runAuthAction = async (action: "sign-in" | "sign-up") => {
+    if (!supabase) {
+      setAuthMessage({ type: "error", text: ui.auth.missingConfig });
+      return;
+    }
+
+    setAuthLoading(true);
+    setAuthMessage(null);
+
+    const credentials = {
+      email: authEmail.trim(),
+      password: authPassword
+    };
+
+    const { error } =
+      action === "sign-in"
+        ? await supabase.auth.signInWithPassword(credentials)
+        : await supabase.auth.signUp(credentials);
+
+    setAuthLoading(false);
+
+    if (error) {
+      setAuthMessage({ type: "error", text: error.message });
+      return;
+    }
+
+    setAuthPassword("");
+    setAuthMessage({
+      type: "success",
+      text: action === "sign-in" ? ui.auth.signInSuccess : ui.auth.signUpSuccess
+    });
+  };
+
+  const signOut = async () => {
+    if (!supabase) {
+      return;
+    }
+
+    setAuthLoading(true);
+    const { error } = await supabase.auth.signOut();
+    setAuthLoading(false);
+
+    if (error) {
+      setAuthMessage({ type: "error", text: error.message });
+      return;
+    }
+
+    setAuthMessage({ type: "success", text: ui.auth.signOutSuccess });
+  };
+
+  return (
+    <section className="panel p-4 sm:p-5">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-moss text-white">
+            <Mail size={20} aria-hidden />
+          </div>
+          <div>
+            <p className="label">{ui.auth.account}</p>
+            <h2 className="mt-1 text-xl font-bold text-ink">{ui.auth.title}</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-moss">
+              {userEmail ? ui.auth.cloudModeText : ui.auth.localModeText}
+            </p>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-clay">{ui.auth.syncNotEnabled}</p>
+          </div>
+        </div>
+        <div className={`rounded-md border px-3 py-2 text-sm font-bold ${userEmail ? "border-accent bg-mint text-moss" : "border-line bg-white text-moss"}`}>
+          {userEmail ? ui.auth.cloudMode : ui.auth.localMode}
+        </div>
+      </div>
+
+      {userEmail ? (
+        <div className="mt-4 flex flex-col gap-3 rounded-md border border-line bg-mint p-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-bold text-ink">{ui.auth.signedInAs}</p>
+            <p className="text-sm text-moss">{userEmail}</p>
+          </div>
+          <button type="button" onClick={signOut} disabled={authLoading} className="button-secondary w-full sm:w-auto disabled:cursor-not-allowed disabled:opacity-50">
+            <LogOut size={16} aria-hidden />
+            {ui.auth.signOut}
+          </button>
+        </div>
+      ) : (
+        <form
+          className="mt-4 grid gap-3 lg:grid-cols-[1fr_1fr_auto_auto]"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void runAuthAction("sign-in");
+          }}
+        >
+          <Field label={ui.auth.email} id="auth-email">
+            <input
+              id="auth-email"
+              type="email"
+              value={authEmail}
+              onChange={(event) => setAuthEmail(event.target.value)}
+              placeholder={ui.auth.emailPlaceholder}
+              className="input"
+              autoComplete="email"
+              required
+            />
+          </Field>
+          <Field label={ui.auth.password} id="auth-password">
+            <input
+              id="auth-password"
+              type="password"
+              value={authPassword}
+              onChange={(event) => setAuthPassword(event.target.value)}
+              placeholder={ui.auth.passwordPlaceholder}
+              className="input"
+              autoComplete="current-password"
+              minLength={6}
+              required
+            />
+          </Field>
+          <div className="flex items-end">
+            <button
+              type="submit"
+              disabled={authLoading || !hasSupabaseConfig}
+              className="button-primary min-h-12 w-full px-3 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {ui.auth.signIn}
+            </button>
+          </div>
+          <div className="flex items-end">
+            <button
+              type="button"
+              onClick={() => void runAuthAction("sign-up")}
+              disabled={authLoading || !hasSupabaseConfig}
+              className="button-secondary min-h-12 w-full px-3 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {ui.auth.signUp}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {!hasSupabaseConfig ? (
+        <p className="mt-3 rounded-md border border-clay/30 bg-white px-3 py-2 text-sm font-semibold text-clay">
+          {ui.auth.missingConfig}
+        </p>
+      ) : null}
+
+      {authMessage ? (
+        <p className={`mt-3 rounded-md border px-3 py-2 text-sm font-semibold ${authMessage.type === "success" ? "border-accent bg-mint text-moss" : "border-clay/30 bg-white text-clay"}`}>
+          {authMessage.text}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
 function Settings({
   profile,
   setProfile,
@@ -2290,6 +2478,8 @@ function Settings({
           </div>
         </div>
       </section>
+
+      <AuthSettings ui={ui} />
 
       <section className="grid gap-5 lg:grid-cols-2">
         <article className="panel p-4 sm:p-5">

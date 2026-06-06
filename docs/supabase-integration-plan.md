@@ -80,8 +80,18 @@ Add small helpers:
 
 - `lib/supabase/client.ts` for browser client.
 - `lib/supabase/server.ts` for server/client cookie support with App Router.
+- `lib/supabase/proxy.ts` plus root `proxy.ts` for session refresh.
 - Keep all existing localStorage hooks working.
-- Add login UI later, but do not require login to use the app.
+- Add email/password auth UI in Settings.
+- Do not require login to use the app.
+
+Current status:
+
+- Supabase packages are installed.
+- Browser/server/proxy helpers exist.
+- Settings can show Local mode or Cloud account mode.
+- Transaction cloud sync is not enabled yet.
+- localStorage remains the only transaction persistence layer.
 
 ### Stage 3: Create user bootstrap after login
 
