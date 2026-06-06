@@ -595,6 +595,41 @@ const getDisplayedExplanation = (transaction: Transaction, language: Language) =
   }
 };
 
+const transactionTypeHelpers: Record<TransactionKind, Record<Language, string>> = {
+  "owner-investment": {
+    fr: "Le propriétaire met son propre argent dans l'entreprise. La caisse augmente et le capital augmente.",
+    en: "The owner puts personal money into the business. Cash increases and owner's capital increases."
+  },
+  "client-payment": {
+    fr: "Un client vous paie pour un service ou une vente. La caisse augmente et un revenu est gagné.",
+    en: "A client pays you for a service or sale. Cash increases and revenue is earned."
+  },
+  "cash-expense": {
+    fr: "L'entreprise paie une dépense tout de suite. Une dépense augmente et la caisse diminue.",
+    en: "The business pays an expense right away. An expense increases and cash decreases."
+  },
+  "equipment-purchase": {
+    fr: "L'entreprise achète un bien durable comme un outil, un ordinateur ou une machine.",
+    en: "The business buys a long-lasting item such as a tool, computer, or machine."
+  },
+  "supplies-credit": {
+    fr: "L'entreprise reçoit des fournitures maintenant mais paiera le fournisseur plus tard.",
+    en: "The business receives supplies now but will pay the supplier later."
+  },
+  "supplier-payment": {
+    fr: "L'entreprise rembourse un fournisseur déjà dû. La dette fournisseur et la caisse diminuent.",
+    en: "The business pays a supplier it already owed. Accounts payable and cash decrease."
+  },
+  "owner-withdrawal": {
+    fr: "Le propriétaire retire de l'argent de l'entreprise pour usage personnel.",
+    en: "The owner takes money out of the business for personal use."
+  },
+  "bank-loan": {
+    fr: "La banque prête de l'argent à l'entreprise. La caisse augmente et une dette bancaire apparaît.",
+    en: "The bank lends money to the business. Cash increases and a bank debt appears."
+  }
+};
+
 export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(activePage);
@@ -1389,8 +1424,8 @@ function AddTransaction({
 }) {
   const isEditing = Boolean(editingTransaction);
   const [kind, setKind] = useState<TransactionKind>(editingTransaction?.kind ?? "client-payment");
-  const [amount, setAmount] = useState(editingTransaction ? String(editingTransaction.amount) : "250");
-  const [label, setLabel] = useState(editingTransaction?.label ?? "Nouvelle vente");
+  const [amount, setAmount] = useState(editingTransaction ? String(editingTransaction.amount) : "");
+  const [label, setLabel] = useState(editingTransaction?.label ?? "");
   const [date, setDate] = useState(editingTransaction?.date ?? formatLocalDateInput());
   const categoryOptions = useMemo(() => getCategoryOptions(kind, businessProfile), [kind, businessProfile]);
   const [category, setCategory] = useState(editingTransaction?.category ?? categoryOptions[0] ?? "");
@@ -1399,6 +1434,7 @@ function AddTransaction({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(editingTransaction?.paymentMethod ?? "Virement");
   const [partyName, setPartyName] = useState(editingTransaction?.partyName ?? "");
   const [note, setNote] = useState(editingTransaction?.note ?? "");
+  const [lastSavedTransaction, setLastSavedTransaction] = useState<Transaction | null>(null);
   const baseTransactions = useMemo(
     () => transactions.filter((transaction) => transaction.id !== editingTransaction?.id),
     [transactions, editingTransaction?.id]
@@ -1408,14 +1444,14 @@ function AddTransaction({
       createTransaction({
         kind,
         amount: Number(amount) || 0,
-        label,
+        label: label.trim() || ui.add.descriptionPlaceholder,
         date,
         category: selectedCategory,
         paymentMethod,
         partyName,
         note
       }),
-    [kind, amount, label, date, selectedCategory, paymentMethod, partyName, note]
+    [kind, amount, label, ui.add.descriptionPlaceholder, date, selectedCategory, paymentMethod, partyName, note]
   );
   const currentCashBalance = useMemo(() => getAccountBalance(baseTransactions, cashAccountName), [baseTransactions]);
   const currentAccountsPayableBalance = useMemo(() => getAccountBalance(baseTransactions, accountsPayableName), [baseTransactions]);
@@ -1425,6 +1461,8 @@ function AddTransaction({
   const projectedCashBalance = currentCashBalance + previewCashMovement;
   const showNegativeCashWarning = projectedCashBalance < 0;
   const showSupplierOverpaymentWarning = kind === "supplier-payment" && (Number(amount) || 0) > currentAccountsPayableBalance;
+  const selectedTypeLabel = transactionKindLabels[kind][language];
+  const selectedTypeHelper = transactionTypeHelpers[kind][language];
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1451,6 +1489,7 @@ function AddTransaction({
     }
 
     onAdd(nextTransaction);
+    setLastSavedTransaction(nextTransaction);
     setLabel("");
     setAmount("");
     setCategory("");
@@ -1462,7 +1501,7 @@ function AddTransaction({
     <div className="space-y-5">
       <Header
         title={isEditing ? ui.add.editTitle : ui.add.title}
-        subtitle={ui.add.subtitle}
+        subtitle={ui.add.guidedSubtitle}
         eyebrow={ui.applicationMvp}
         action={
           isEditing ? (
@@ -1476,6 +1515,23 @@ function AddTransaction({
           ) : undefined
         }
       />
+      {lastSavedTransaction ? (
+        <section className="panel border-accent bg-mint p-4 sm:p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="label">{ui.add.savedTitle}</p>
+              <h2 className="mt-1 text-xl font-bold text-ink">{lastSavedTransaction.label}</h2>
+              <p className="mt-2 text-sm leading-6 text-moss">{ui.add.savedText}</p>
+            </div>
+            <button type="button" onClick={() => setLastSavedTransaction(null)} className="button-secondary w-full sm:w-auto">
+              {ui.actions.newTransaction}
+            </button>
+          </div>
+          <div className="mt-4">
+            <AccountingExplanation transaction={lastSavedTransaction} ui={ui} language={language} compact />
+          </div>
+        </section>
+      ) : null}
       <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <form onSubmit={submit} className={`panel space-y-5 p-4 sm:p-5 ${isEditing ? "border-accent ring-2 ring-accent/15" : ""}`}>
           {isEditing ? (
@@ -1489,24 +1545,42 @@ function AddTransaction({
               {showNegativeCashWarning ? <WarningMessage text={ui.warnings.negativeCash} /> : null}
             </div>
           ) : null}
-          <FormSection title={ui.add.mainInfo}>
-            <div>
-              <label className="label" htmlFor="kind">
-                {ui.add.type}
-              </label>
-              <select id="kind" value={kind} onChange={(event) => setKind(event.target.value as TransactionKind)} className="input mt-2">
-                {transactionTemplates.map((template) => (
-                  <option key={template.kind} value={template.kind}>
-                    {transactionKindLabels[template.kind][language]}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-2 text-sm leading-6 text-moss">
-                {language === "fr"
-                  ? transactionTemplates.find((template) => template.kind === kind)?.helper
-                  : transactionTemplates.find((template) => template.kind === kind)?.english}
-              </p>
+          <FormSection title={`${ui.add.step1}: ${ui.add.chooseScenario}`} description={ui.add.explanationHint}>
+            <div className="rounded-md border border-line bg-mint p-3">
+              <p className="label">{ui.add.currentScenario}</p>
+              <h2 className="mt-1 text-lg font-bold text-ink">{selectedTypeLabel}</h2>
+              <p className="mt-2 text-sm leading-6 text-moss">{selectedTypeHelper}</p>
             </div>
+            <div>
+              <p className="label">{ui.add.changeScenario}</p>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                {transactionTemplates.map((template) => {
+                  const isSelected = template.kind === kind;
+                  return (
+                    <button
+                      key={template.kind}
+                      type="button"
+                      onClick={() => {
+                        setKind(template.kind);
+                        setCategory(getCategoryOptions(template.kind, businessProfile)[0] ?? "");
+                        setLastSavedTransaction(null);
+                      }}
+                      className={`min-h-20 rounded-md border px-3 py-3 text-left transition ${
+                        isSelected ? "border-moss bg-moss text-white shadow-soft" : "border-line bg-white text-ink hover:border-accent hover:bg-mint"
+                      }`}
+                    >
+                      <span className="block text-sm font-bold">{transactionKindLabels[template.kind][language]}</span>
+                      <span className={`mt-1 block text-xs leading-5 ${isSelected ? "text-white/85" : "text-moss"}`}>
+                        {transactionTypeHelpers[template.kind][language]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </FormSection>
+
+          <FormSection title={`${ui.add.step2}: ${ui.add.mainInfo}`} description={ui.add.detailsHint}>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={ui.add.date} id="date">
                 <input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="input" required />
@@ -1581,7 +1655,14 @@ function AddTransaction({
           </button>
         </form>
 
-        <AccountingExplanation transaction={preview} ui={ui} language={language} />
+        <div className="space-y-3">
+          <div className="panel p-4 sm:p-5">
+            <p className="label">{ui.add.step3}</p>
+            <h2 className="mt-1 text-xl font-bold text-moss">{ui.add.livePreview}</h2>
+            <p className="mt-2 text-sm leading-6 text-moss">{ui.add.explanationHint}</p>
+          </div>
+          <AccountingExplanation transaction={preview} ui={ui} language={language} />
+        </div>
       </div>
     </div>
   );
@@ -2093,10 +2174,13 @@ function WarningMessage({ text }: { text: string }) {
   );
 }
 
-function FormSection({ title, children }: { title: string; children: React.ReactNode }) {
+function FormSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
     <section className="space-y-4 border-b border-line pb-5 last:border-b-0 last:pb-0">
-      <h3 className="text-sm font-bold uppercase text-moss">{title}</h3>
+      <div>
+        <h3 className="text-sm font-bold uppercase text-moss">{title}</h3>
+        {description ? <p className="mt-2 text-sm leading-6 text-moss">{description}</p> : null}
+      </div>
       {children}
     </section>
   );
@@ -2208,12 +2292,22 @@ function TransactionList({
   );
 }
 
-function AccountingExplanation({ transaction, ui, language }: { transaction: Transaction; ui: AppTranslations; language: Language }) {
+function AccountingExplanation({
+  transaction,
+  ui,
+  language,
+  compact = false
+}: {
+  transaction: Transaction;
+  ui: AppTranslations;
+  language: Language;
+  compact?: boolean;
+}) {
   const debitTotal = sum(transaction.generated.journal.map((line) => line.debit));
   const creditTotal = sum(transaction.generated.journal.map((line) => line.credit));
 
   return (
-    <section className="panel space-y-4 p-4 sm:p-5">
+    <section className={`panel space-y-4 p-4 sm:p-5 ${compact ? "bg-white" : ""}`}>
       <div>
         <p className="label">{ui.transactionDetails.explanation}</p>
         <h2 className="mt-1 text-xl font-bold">{ui.transactionDetails.changed}</h2>
@@ -2237,7 +2331,7 @@ function AccountingExplanation({ transaction, ui, language }: { transaction: Tra
 
       <div>
         <h3 className="mb-2 font-bold">{ui.transactionDetails.affectedAccounts}</h3>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className={`grid gap-2 ${compact ? "" : "sm:grid-cols-2"}`}>
           {transaction.generated.affectedAccounts.map((account) => (
             <div key={`${account.name}-${account.movement}`} className="soft-card">
               <p className="font-semibold">{translateAccountName(account.name, language)}</p>

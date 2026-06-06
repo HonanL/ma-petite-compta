@@ -93,7 +93,20 @@ export const translations = {
       descriptionPlaceholder: "Ex: Assemblage meuble IKEA, Achat essence",
       amountPlaceholder: "Ex: 25 000",
       partyPlaceholder: "Ex: Client Dupont, Fournisseur quincaillerie",
-      notePlaceholder: "Détail utile pour vous relire plus tard"
+      notePlaceholder: "Détail utile pour vous relire plus tard",
+      guidedTitle: "Assistant de transaction",
+      guidedSubtitle: "Suivez les étapes: choisissez le scénario, ajoutez les détails, puis vérifiez l'écriture comptable.",
+      step1: "Étape 1",
+      step2: "Étape 2",
+      step3: "Étape 3",
+      chooseScenario: "Choisissez ce qui s'est passé",
+      detailsHint: "Ajoutez les informations pratiques pour vos dossiers.",
+      explanationHint: "Ma Petite Compta transforme votre transaction en écriture comptable équilibrée.",
+      livePreview: "Aperçu comptable",
+      savedTitle: "Transaction enregistrée",
+      savedText: "Voici l'explication comptable de la transaction que vous venez d'ajouter.",
+      currentScenario: "Scénario choisi",
+      changeScenario: "Changer le scénario"
     },
     reports: {
       title: "Rapports",
@@ -315,7 +328,20 @@ export const translations = {
       descriptionPlaceholder: "Ex: IKEA furniture assembly, fuel purchase",
       amountPlaceholder: "Ex: 25 000",
       partyPlaceholder: "Ex: Client Dupont, hardware supplier",
-      notePlaceholder: "Useful detail for later review"
+      notePlaceholder: "Useful detail for later review",
+      guidedTitle: "Transaction assistant",
+      guidedSubtitle: "Follow the steps: choose the scenario, add details, then review the accounting entry.",
+      step1: "Step 1",
+      step2: "Step 2",
+      step3: "Step 3",
+      chooseScenario: "Choose what happened",
+      detailsHint: "Add practical information for your records.",
+      explanationHint: "Ma Petite Compta turns your transaction into a balanced accounting entry.",
+      livePreview: "Accounting preview",
+      savedTitle: "Transaction saved",
+      savedText: "Here is the accounting explanation for the transaction you just added.",
+      currentScenario: "Selected scenario",
+      changeScenario: "Change scenario"
     },
     reports: {
       title: "Reports",
