@@ -2260,6 +2260,14 @@ function Settings({
   ui: AppTranslations;
   language: Language;
 }) {
+  const confirmAddSamples = () => {
+    const confirmed = window.confirm(ui.confirmations.addSamples);
+
+    if (confirmed) {
+      onAddSamples();
+    }
+  };
+
   return (
     <div className="space-y-5">
       <Header
@@ -2270,28 +2278,54 @@ function Settings({
 
       <BusinessProfileView profile={profile} setProfile={setProfile} ui={ui} language={language} showHeader={false} />
 
+      <section className="panel p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-moss text-white">
+            <ShieldCheck size={20} aria-hidden />
+          </div>
+          <div>
+            <p className="label">{ui.storage}</p>
+            <h2 className="mt-1 text-xl font-bold text-ink">{ui.settings.dataStorageTitle}</h2>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-moss">{ui.settings.dataStorageText}</p>
+          </div>
+        </div>
+      </section>
+
       <section className="grid gap-5 lg:grid-cols-2">
         <article className="panel p-4 sm:p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-moss text-white">
-            <Upload size={18} aria-hidden />
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-moss text-white">
+              <Download size={18} aria-hidden />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">{ui.settings.backupTitle}</h2>
+              <p className="mt-2 text-sm leading-6 text-moss">{ui.settings.backupText}</p>
+              <p className="mt-2 text-sm leading-6 text-moss">{ui.settings.exportBackupHint}</p>
+            </div>
           </div>
-          <h2 className="mt-3 text-lg font-bold">{ui.storage}</h2>
-          <p className="mt-2 text-sm leading-6 text-moss">{ui.localStorage}</p>
-          {backupMessage ? (
-            <p className={`mt-3 rounded-md border px-3 py-2 text-sm font-semibold ${backupMessage.type === "success" ? "border-accent bg-mint text-moss" : "border-clay/30 bg-white text-clay"}`}>
-              {backupMessage.text}
-            </p>
-          ) : null}
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            <button type="button" onClick={onExportBackup} className="button-secondary">
-              <Download size={16} aria-hidden />
-              {ui.actions.exportBackup}
-            </button>
-            <button type="button" onClick={onImportBackup} className="button-secondary">
-              <Upload size={16} aria-hidden />
-              {ui.actions.importBackup}
-            </button>
+          <button type="button" onClick={onExportBackup} className="button-primary mt-4 w-full sm:w-auto">
+            <Download size={16} aria-hidden />
+            {ui.actions.exportBackup}
+          </button>
+        </article>
+
+        <article className="panel p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-ink">
+              <Upload size={18} aria-hidden />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">{ui.settings.restoreTitle}</h2>
+              <p className="mt-2 text-sm leading-6 text-moss">{ui.settings.restoreText}</p>
+              <p className="mt-3 rounded-md border border-clay/30 bg-white px-3 py-2 text-sm font-semibold text-clay">
+                {ui.settings.restoreWarning}
+              </p>
+            </div>
           </div>
+          <button type="button" onClick={onImportBackup} className="button-secondary mt-4 w-full sm:w-auto">
+            <Upload size={16} aria-hidden />
+            {ui.actions.importBackup}
+          </button>
           <input
             ref={backupInputRef}
             type="file"
@@ -2300,15 +2334,27 @@ function Settings({
             className="hidden"
           />
         </article>
+      </section>
 
-        <article className="panel p-4 sm:p-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-accent text-ink">
-            <ReceiptText size={18} aria-hidden />
+      {backupMessage ? (
+        <p className={`rounded-md border px-3 py-2 text-sm font-semibold ${backupMessage.type === "success" ? "border-accent bg-mint text-moss" : "border-clay/30 bg-white text-clay"}`}>
+          {backupMessage.text}
+        </p>
+      ) : null}
+
+      <section className="panel p-4 sm:p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-accent text-ink">
+              <ReceiptText size={18} aria-hidden />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold">{ui.settings.sampleTitle}</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-moss">{ui.settings.sampleText}</p>
+            </div>
           </div>
-          <h2 className="mt-3 text-lg font-bold">{ui.sampleDataTitle}</h2>
-          <p className="mt-2 text-sm leading-6 text-moss">{ui.sampleDataText}</p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2">
-            <button type="button" onClick={onAddSamples} className="button-primary">
+          <div className="grid w-full gap-2 sm:w-auto sm:min-w-72 sm:grid-cols-2">
+            <button type="button" onClick={confirmAddSamples} className="button-primary">
               <Plus size={16} aria-hidden />
               {ui.actions.addSamples}
             </button>
@@ -2316,14 +2362,16 @@ function Settings({
               {ui.actions.removeSamples}
             </button>
           </div>
-        </article>
+        </div>
       </section>
 
-      <section className="panel p-4 sm:p-5">
+      <section className="rounded-md border border-clay/30 bg-white p-4 shadow-soft sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-ink">{ui.actions.reset}</h2>
-            <p className="mt-2 text-sm leading-6 text-moss">{ui.confirmations.clearAll}</p>
+            <p className="label text-clay">{ui.settings.dangerTitle}</p>
+            <h2 className="mt-1 text-lg font-bold text-ink">{ui.settings.resetTitle}</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-moss">{ui.settings.dangerText}</p>
+            <p className="mt-2 text-sm font-semibold text-clay">{ui.confirmations.clearAll}</p>
           </div>
           <button type="button" onClick={onReset} className="button-danger w-full sm:w-auto">
             <RotateCcw size={16} aria-hidden />

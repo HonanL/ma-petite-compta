@@ -221,12 +221,27 @@ export const translations = {
     empty: "Aucune transaction pour cette période.",
     emptyHelp: "Ajoutez votre première transaction pour voir vos rapports, ou utilisez les données d'exemple pour tester l'application.",
     storage: "Stockage",
-    localStorage: "Les données restent dans ce navigateur avec localStorage.",
+    localStorage: "Vos données restent dans ce navigateur. Faites une sauvegarde JSON régulièrement.",
     profileLabel: "Profil",
     sampleBadge: "Exemple",
     loading: "Chargement...",
     sampleDataTitle: "Données d'exemple",
     sampleDataText: "Ajoutez quelques transactions fictives pour tester les rapports sans modifier vos données réelles.",
+    settings: {
+      dataStorageTitle: "Stockage des données",
+      dataStorageText: "Vos données restent dans ce navigateur. Faites une sauvegarde JSON régulièrement.",
+      backupTitle: "Sauvegarde JSON",
+      backupText: "La sauvegarde contient vos transactions, votre profil d'entreprise et votre langue actuelle.",
+      exportBackupHint: "Gardez ce fichier dans un endroit sûr pour le réimporter plus tard ou sur un autre appareil.",
+      restoreTitle: "Restaurer une sauvegarde",
+      restoreText: "L'import vérifie le fichier JSON avant de remplacer les données locales compatibles.",
+      restoreWarning: "Attention: l'import peut remplacer vos transactions et paramètres locaux.",
+      sampleTitle: "Données d'exemple",
+      sampleText: "Les exemples servent à tester et apprendre. Ils peuvent être supprimés sans effacer vos vraies transactions.",
+      dangerTitle: "Zone dangereuse",
+      dangerText: "Cette action supprime toutes les transactions enregistrées dans ce navigateur.",
+      resetTitle: "Supprimer les transactions"
+    },
     chooseProfile: "Choisir le profil",
     viewReports: "Voir les rapports",
     transactionDetails: {
@@ -246,7 +261,8 @@ export const translations = {
       clearAll: "Êtes-vous sûr de vouloir supprimer toutes les transactions ? Cette action est irréversible.",
       deleteOne: "Supprimer la transaction",
       irreversible: "Cette action est irréversible.",
-      importBackup: "Importer cette sauvegarde remplacera vos données actuelles. Voulez-vous continuer ?"
+      importBackup: "Importer cette sauvegarde remplacera vos données actuelles. Voulez-vous continuer ?",
+      addSamples: "Ajouter des données d'exemple à vos transactions actuelles ? Vos vraies transactions ne seront pas supprimées."
     },
     messages: {
       backupExported: "La sauvegarde a été exportée.",
@@ -485,12 +501,27 @@ export const translations = {
     empty: "No transactions for this period.",
     emptyHelp: "Add your first transaction to see reports, or use example data to test the app.",
     storage: "Storage",
-    localStorage: "Data stays in this browser with localStorage.",
+    localStorage: "Your data stays in this browser. Export a JSON backup regularly.",
     profileLabel: "Profile",
     sampleBadge: "Example",
     loading: "Loading...",
     sampleDataTitle: "Example data",
     sampleDataText: "Add a few sample transactions to test reports without changing your real data.",
+    settings: {
+      dataStorageTitle: "Data storage",
+      dataStorageText: "Your data stays in this browser. Export a JSON backup regularly.",
+      backupTitle: "JSON backup",
+      backupText: "The backup contains your transactions, business profile, and current language.",
+      exportBackupHint: "Keep this file somewhere safe so you can import it later or on another device.",
+      restoreTitle: "Restore a backup",
+      restoreText: "Import checks the JSON file before replacing compatible local data.",
+      restoreWarning: "Warning: import may replace your local transactions and settings.",
+      sampleTitle: "Example data",
+      sampleText: "Examples are for testing and learning. They can be removed without deleting your real transactions.",
+      dangerTitle: "Danger zone",
+      dangerText: "This action deletes all transactions stored in this browser.",
+      resetTitle: "Delete transactions"
+    },
     chooseProfile: "Choose profile",
     viewReports: "View reports",
     transactionDetails: {
@@ -510,7 +541,8 @@ export const translations = {
       clearAll: "Are you sure you want to delete all transactions? This action is irreversible.",
       deleteOne: "Delete transaction",
       irreversible: "This action is irreversible.",
-      importBackup: "Importing this backup will replace your current data. Do you want to continue?"
+      importBackup: "Importing this backup will replace your current data. Do you want to continue?",
+      addSamples: "Add example data to your current transactions? Your real transactions will not be deleted."
     },
     messages: {
       backupExported: "The backup has been exported.",
