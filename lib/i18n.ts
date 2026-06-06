@@ -108,7 +108,8 @@ export const translations = {
       savedTitle: "Transaction enregistrée",
       savedText: "Voici l'explication comptable de la transaction que vous venez d'ajouter.",
       currentScenario: "Scénario choisi",
-      changeScenario: "Changer le scénario"
+      changeScenario: "Changer le scénario",
+      viewExplanation: "Voir l'explication comptable"
     },
     reports: {
       title: "Rapports",
@@ -345,7 +346,8 @@ export const translations = {
       savedTitle: "Transaction saved",
       savedText: "Here is the accounting explanation for the transaction you just added.",
       currentScenario: "Selected scenario",
-      changeScenario: "Change scenario"
+      changeScenario: "Change scenario",
+      viewExplanation: "View accounting explanation"
     },
     reports: {
       title: "Reports",

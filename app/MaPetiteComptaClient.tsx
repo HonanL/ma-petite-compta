@@ -942,6 +942,8 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                   onAdd={addTransaction}
                   onUpdate={saveEditedTransaction}
                   onCancelEdit={stopEditingTransaction}
+                  onOpenTransactions={() => navigateTo("transactions")}
+                  onOpenReports={() => navigateTo("reports")}
                   editingTransaction={editingTransaction}
                   businessProfile={businessProfile}
                   transactions={transactions}
@@ -1408,6 +1410,8 @@ function AddTransaction({
   onAdd,
   onUpdate,
   onCancelEdit,
+  onOpenTransactions,
+  onOpenReports,
   editingTransaction,
   businessProfile,
   transactions,
@@ -1417,6 +1421,8 @@ function AddTransaction({
   onAdd: (transaction: Transaction) => void;
   onUpdate: (transaction: Transaction) => void;
   onCancelEdit: () => void;
+  onOpenTransactions: () => void;
+  onOpenReports: () => void;
   editingTransaction: Transaction | null;
   businessProfile: ReturnType<typeof getBusinessProfileDefinition>;
   transactions: Transaction[];
@@ -1462,7 +1468,6 @@ function AddTransaction({
   const projectedCashBalance = currentCashBalance + previewCashMovement;
   const showNegativeCashWarning = projectedCashBalance < 0;
   const showSupplierOverpaymentWarning = kind === "supplier-payment" && (Number(amount) || 0) > currentAccountsPayableBalance;
-  const selectedTypeLabel = transactionKindLabels[kind][language];
   const selectedTypeHelper = transactionTypeHelpers[kind][language];
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
@@ -1502,7 +1507,7 @@ function AddTransaction({
     <div className="space-y-5">
       <Header
         title={isEditing ? ui.add.editTitle : ui.add.title}
-        subtitle={ui.add.guidedSubtitle}
+        subtitle={ui.add.subtitle}
         eyebrow={ui.applicationMvp}
         action={
           isEditing ? (
@@ -1518,22 +1523,30 @@ function AddTransaction({
       />
       {lastSavedTransaction ? (
         <section className="panel border-accent bg-mint p-4 sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="label">{ui.add.savedTitle}</p>
-              <h2 className="mt-1 text-xl font-bold text-ink">{lastSavedTransaction.label}</h2>
-              <p className="mt-2 text-sm leading-6 text-moss">{ui.add.savedText}</p>
+              <h2 className="mt-1 text-lg font-bold text-ink">{lastSavedTransaction.label}</h2>
+              <p className="mt-2 text-sm leading-6 text-moss">{getDisplayedExplanation(lastSavedTransaction, language)}</p>
             </div>
-            <button type="button" onClick={() => setLastSavedTransaction(null)} className="button-secondary w-full sm:w-auto">
-              {ui.actions.newTransaction}
-            </button>
-          </div>
-          <div className="mt-4">
-            <AccountingExplanation transaction={lastSavedTransaction} ui={ui} language={language} compact />
+            <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[30rem]">
+              <button type="button" onClick={() => setLastSavedTransaction(null)} className="button-primary">
+                <Plus size={16} aria-hidden />
+                {ui.actions.newTransaction}
+              </button>
+              <button type="button" onClick={onOpenTransactions} className="button-secondary">
+                <ReceiptText size={16} aria-hidden />
+                {ui.nav.transactions}
+              </button>
+              <button type="button" onClick={onOpenReports} className="button-secondary">
+                <FileBarChart2 size={16} aria-hidden />
+                {ui.nav.reports}
+              </button>
+            </div>
           </div>
         </section>
       ) : null}
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+      <div>
         <form onSubmit={submit} className={`panel space-y-5 p-4 sm:p-5 ${isEditing ? "border-accent ring-2 ring-accent/15" : ""}`}>
           {isEditing ? (
             <div className="rounded-md border border-line bg-mint px-3 py-2 text-sm font-semibold text-moss">{ui.add.editMode}</div>
@@ -1546,42 +1559,30 @@ function AddTransaction({
               {showNegativeCashWarning ? <WarningMessage text={ui.warnings.negativeCash} /> : null}
             </div>
           ) : null}
-          <FormSection title={`${ui.add.step1}: ${ui.add.chooseScenario}`} description={ui.add.explanationHint}>
-            <div className="rounded-md border border-line bg-mint p-3">
-              <p className="label">{ui.add.currentScenario}</p>
-              <h2 className="mt-1 text-lg font-bold text-ink">{selectedTypeLabel}</h2>
+          <FormSection title={ui.add.mainInfo} description={ui.add.detailsHint}>
+            <div>
+              <label className="label" htmlFor="kind">
+                {ui.add.type}
+              </label>
+              <select
+                id="kind"
+                value={kind}
+                onChange={(event) => {
+                  const nextKind = event.target.value as TransactionKind;
+                  setKind(nextKind);
+                  setCategory(getCategoryOptions(nextKind, businessProfile)[0] ?? "");
+                  setLastSavedTransaction(null);
+                }}
+                className="input mt-2"
+              >
+                {transactionTemplates.map((template) => (
+                  <option key={template.kind} value={template.kind}>
+                    {transactionKindLabels[template.kind][language]}
+                  </option>
+                ))}
+              </select>
               <p className="mt-2 text-sm leading-6 text-moss">{selectedTypeHelper}</p>
             </div>
-            <div>
-              <p className="label">{ui.add.changeScenario}</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                {transactionTemplates.map((template) => {
-                  const isSelected = template.kind === kind;
-                  return (
-                    <button
-                      key={template.kind}
-                      type="button"
-                      onClick={() => {
-                        setKind(template.kind);
-                        setCategory(getCategoryOptions(template.kind, businessProfile)[0] ?? "");
-                        setLastSavedTransaction(null);
-                      }}
-                      className={`min-h-20 rounded-md border px-3 py-3 text-left transition ${
-                        isSelected ? "border-moss bg-moss text-white shadow-soft" : "border-line bg-white text-ink hover:border-accent hover:bg-mint"
-                      }`}
-                    >
-                      <span className="block text-sm font-bold">{transactionKindLabels[template.kind][language]}</span>
-                      <span className={`mt-1 block text-xs leading-5 ${isSelected ? "text-white/85" : "text-moss"}`}>
-                        {transactionTypeHelpers[template.kind][language]}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </FormSection>
-
-          <FormSection title={`${ui.add.step2}: ${ui.add.mainInfo}`} description={ui.add.detailsHint}>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label={ui.add.date} id="date">
                 <input id="date" type="date" value={date} onChange={(event) => setDate(event.target.value)} className="input" required />
@@ -1672,14 +1673,13 @@ function AddTransaction({
           </button>
         </form>
 
-        <div className="space-y-3">
-          <div className="panel p-4 sm:p-5">
-            <p className="label">{ui.add.step3}</p>
-            <h2 className="mt-1 text-xl font-bold text-moss">{ui.add.livePreview}</h2>
+          <details className="mt-4 rounded-md border border-line bg-white p-4">
+            <summary className="cursor-pointer text-sm font-bold text-moss">{ui.add.viewExplanation}</summary>
             <p className="mt-2 text-sm leading-6 text-moss">{ui.add.explanationHint}</p>
-          </div>
-          <AccountingExplanation transaction={preview} ui={ui} language={language} />
-        </div>
+            <div className="mt-4">
+              <AccountingExplanation transaction={preview} ui={ui} language={language} compact />
+            </div>
+          </details>
       </div>
     </div>
   );
