@@ -86,6 +86,8 @@ export const translations = {
       note: "Note facultative",
       categoryUnavailable: "Aucune catégorie recommandée pour ce type de transaction. La logique comptable reste inchangée.",
       categorySuggestion: "Suggestions pour le profil",
+      examplesTitle: "Exemples adaptés à votre activité",
+      examplesHint: "Cliquez sur un exemple pour l'utiliser comme description. Vous pouvez le modifier ensuite.",
       mainInfo: "Informations principales",
       paymentDetails: "Détails de paiement",
       notesSection: "Notes",
@@ -321,6 +323,8 @@ export const translations = {
       note: "Optional notes",
       categoryUnavailable: "No suggested category for this transaction type. The accounting logic stays unchanged.",
       categorySuggestion: "Suggestions for profile",
+      examplesTitle: "Examples tailored to your activity",
+      examplesHint: "Click an example to use it as the description. You can edit it afterward.",
       mainInfo: "Main information",
       paymentDetails: "Payment details",
       notesSection: "Notes",
@@ -526,10 +530,14 @@ export const businessProfileTranslations: Record<string, Record<Language, string
 };
 
 export const categoryTranslations: Record<string, Record<Language, string>> = {
+  "Revenus d'assemblage": { fr: "Revenus d'assemblage", en: "Assembly income" },
   "Revenus de service": { fr: "Revenus de service", en: "Service revenue" },
+  "Revenus de nettoyage": { fr: "Revenus de nettoyage", en: "Cleaning income" },
+  "Revenus de réparation": { fr: "Revenus de réparation", en: "Repair income" },
   Pourboires: { fr: "Pourboires", en: "Tips" },
   "Frais de déplacement facturés": { fr: "Frais de déplacement facturés", en: "Billed travel fees" },
   Outils: { fr: "Outils", en: "Tools" },
+  Quincaillerie: { fr: "Quincaillerie", en: "Hardware" },
   Fournitures: { fr: "Fournitures", en: "Supplies" },
   "Essence / déplacement": { fr: "Essence / déplacement", en: "Fuel / travel" },
   Publicité: { fr: "Publicité", en: "Advertising" },
@@ -539,11 +547,14 @@ export const categoryTranslations: Record<string, Record<Language, string>> = {
   "Contrats réguliers": { fr: "Contrats réguliers", en: "Regular contracts" },
   "Produits de nettoyage": { fr: "Produits de nettoyage", en: "Cleaning products" },
   Transport: { fr: "Transport", en: "Transportation" },
+  "Main-d'œuvre": { fr: "Main-d'œuvre", en: "Labor" },
   Équipement: { fr: "Équipement", en: "Equipment" },
   "Revenus de livraison": { fr: "Revenus de livraison", en: "Delivery revenue" },
   Bonus: { fr: "Bonus", en: "Bonus" },
   Essence: { fr: "Essence", en: "Fuel" },
   "Entretien véhicule": { fr: "Entretien véhicule", en: "Vehicle maintenance" },
+  "Téléphone / internet": { fr: "Téléphone / internet", en: "Phone / internet" },
+  "Pièces informatiques": { fr: "Pièces informatiques", en: "Computer parts" },
   Consultation: { fr: "Consultation", en: "Consulting" },
   "Support technique": { fr: "Support technique", en: "Technical support" },
   Logiciels: { fr: "Logiciels", en: "Software" },
@@ -558,11 +569,46 @@ export const categoryTranslations: Record<string, Record<Language, string>> = {
   Ventes: { fr: "Ventes", en: "Sales" }
 };
 
+export const exampleTranslations: Record<string, Record<Language, string>> = {
+  "Assemblage meuble IKEA": { fr: "Assemblage meuble IKEA", en: "IKEA furniture assembly" },
+  "Installation étagère": { fr: "Installation étagère", en: "Shelf installation" },
+  "Achat quincaillerie": { fr: "Achat quincaillerie", en: "Hardware purchase" },
+  "Transport chez client": { fr: "Transport chez client", en: "Travel to customer" },
+  "Achat perceuse": { fr: "Achat perceuse", en: "Drill purchase" },
+  "Nettoyage bureau client": { fr: "Nettoyage bureau client", en: "Client office cleaning" },
+  "Achat produits de nettoyage": { fr: "Achat produits de nettoyage", en: "Cleaning supplies purchase" },
+  "Transport vers client": { fr: "Transport vers client", en: "Transport to client" },
+  "Achat aspirateur": { fr: "Achat aspirateur", en: "Vacuum purchase" },
+  "Publicité locale": { fr: "Publicité locale", en: "Local marketing" },
+  "Paiement livraison client": { fr: "Paiement livraison client", en: "Customer delivery payment" },
+  "Achat essence": { fr: "Achat essence", en: "Fuel purchase" },
+  "Entretien véhicule": { fr: "Entretien véhicule", en: "Vehicle maintenance" },
+  "Facture téléphone": { fr: "Facture téléphone", en: "Phone bill" },
+  "Assurance véhicule": { fr: "Assurance véhicule", en: "Vehicle insurance" },
+  "Réparation ordinateur client": { fr: "Réparation ordinateur client", en: "Customer computer repair" },
+  "Achat pièce de rechange": { fr: "Achat pièce de rechange", en: "Replacement part purchase" },
+  "Abonnement logiciel": { fr: "Abonnement logiciel", en: "Software subscription" },
+  "Achat outils": { fr: "Achat outils", en: "Tools purchase" },
+  "Support technique": { fr: "Support technique", en: "Technical support" },
+  "Vente produit en ligne": { fr: "Vente produit en ligne", en: "Online product sale" },
+  "Achat inventaire": { fr: "Achat inventaire", en: "Inventory purchase" },
+  "Achat emballage": { fr: "Achat emballage", en: "Packaging purchase" },
+  "Frais d'expédition": { fr: "Frais d'expédition", en: "Shipping fees" },
+  "Frais de plateforme": { fr: "Frais de plateforme", en: "Platform fees" },
+  "Paiement client": { fr: "Paiement client", en: "Customer payment" },
+  "Achat fournitures": { fr: "Achat fournitures", en: "Supplies purchase" },
+  Transport: { fr: "Transport", en: "Transportation" },
+  Publicité: { fr: "Publicité", en: "Advertising" }
+};
+
 export const translateBusinessProfileName = (profile: string, language: Language) =>
   businessProfileTranslations[profile]?.[language] ?? profile;
 
 export const translateCategoryName = (category: string, language: Language) =>
   categoryTranslations[category]?.[language] ?? category;
+
+export const translateExampleText = (example: string, language: Language) =>
+  exampleTranslations[example]?.[language] ?? example;
 
 export const transactionKindLabels: Record<TransactionKind, Record<Language, string>> = {
   "owner-investment": { fr: "Investissement du propriétaire", en: "Owner investment" },

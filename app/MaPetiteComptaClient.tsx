@@ -57,6 +57,7 @@ import {
   transactionKindLabels,
   translateAccountName,
   translateCategoryName,
+  translateExampleText,
   translatePaymentMethod,
   translateStatementName,
   translations
@@ -1592,6 +1593,22 @@ function AddTransaction({
             <Field label={ui.add.description} id="label">
               <input id="label" value={label} onChange={(event) => setLabel(event.target.value)} className="input" placeholder={ui.add.descriptionPlaceholder} required />
             </Field>
+            <div className="rounded-md border border-line bg-mint p-3">
+              <p className="label">{ui.add.examplesTitle}</p>
+              <p className="mt-1 text-sm leading-6 text-moss">{ui.add.examplesHint}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {businessProfile.examples.map((example) => (
+                  <button
+                    key={example}
+                    type="button"
+                    onClick={() => setLabel(translateExampleText(example, language))}
+                    className="rounded-md border border-line bg-white px-3 py-2 text-left text-sm font-semibold text-moss transition hover:border-accent hover:bg-white"
+                  >
+                    {translateExampleText(example, language)}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div>
               <label className="label" htmlFor="category">
                 {ui.add.category}
@@ -2011,6 +2028,7 @@ function BusinessProfileView({
         <CategoryPanel title={ui.profile.revenues} categories={selectedProfile.revenues} language={language} />
         <CategoryPanel title={ui.profile.expenses} categories={selectedProfile.expenses} language={language} />
       </div>
+      <CategoryPanel title={ui.add.examplesTitle} categories={selectedProfile.examples} language={language} translateItem={translateExampleText} />
     </div>
   );
 }
@@ -2119,14 +2137,24 @@ function Settings({
   );
 }
 
-function CategoryPanel({ title, categories, language }: { title: string; categories: string[]; language: Language }) {
+function CategoryPanel({
+  title,
+  categories,
+  language,
+  translateItem = translateCategoryName
+}: {
+  title: string;
+  categories: string[];
+  language: Language;
+  translateItem?: (value: string, language: Language) => string;
+}) {
   return (
     <section className="panel p-4 sm:p-5">
       <h2 className="text-lg font-bold">{title}</h2>
       <div className="mt-4 flex flex-wrap gap-2">
         {categories.map((category) => (
           <span key={category} className="border border-line bg-mint px-3 py-2 text-sm font-semibold text-moss" style={{ borderRadius: 6 }}>
-            {translateCategoryName(category, language)}
+            {translateItem(category, language)}
           </span>
         ))}
       </div>
