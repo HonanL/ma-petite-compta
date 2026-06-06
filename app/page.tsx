@@ -11,7 +11,6 @@ const logoPath = "/logo-ma-petite-compta.png?v=20260604";
 export default function Home() {
   const { language, setLanguage } = useLanguage();
   const ui = translations[language];
-  const alternateLanguage = language === "fr" ? "en" : "fr";
   const benefits = [
     { text: ui.landing.benefits.transactions, icon: ReceiptText },
     { text: ui.landing.benefits.journal, icon: BookOpenCheck },
@@ -56,7 +55,6 @@ export default function Home() {
             <p className="label">{ui.landing.eyebrow}</p>
             <h1 className="mt-3 max-w-3xl text-4xl font-bold leading-tight text-moss sm:text-5xl lg:text-6xl">{ui.appName}</h1>
             <p className="mt-5 max-w-2xl text-lg font-semibold leading-8 text-ink sm:text-xl">{ui.heroTagline}</p>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-moss">{translations[alternateLanguage].heroTagline}</p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/dashboard" className="button-primary w-full sm:w-auto">

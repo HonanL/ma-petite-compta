@@ -30,16 +30,16 @@ export const translations = {
       add: "Ajouter",
       reports: "Rapports",
       learn: "Apprendre",
-      settings: "ParamÃ¨tres"
+      settings: "Paramètres"
     },
     landing: {
       eyebrow: "Bienvenue",
       start: "Commencer",
       addTransaction: "Ajouter une transaction",
-      benefitsTitle: "GÃ©rez votre activitÃ© simplement",
+      benefitsTitle: "Gérez votre activité simplement",
       benefits: {
         transactions: "Enregistrez vos transactions",
-        journal: "Comprenez vos Ã©critures comptables",
+        journal: "Comprenez vos écritures comptables",
         reports: "Consultez vos rapports"
       }
     },
@@ -463,6 +463,54 @@ export const translatePaymentMethod = (method: PaymentMethod, language: Language
 
 export const translateStatementName = (statement: StatementType, language: Language) =>
   statementNameTranslations[statement]?.[language] ?? statement;
+
+export const businessProfileTranslations: Record<string, Record<Language, string>> = {
+  "Assemblage de meubles": { fr: "Assemblage de meubles", en: "Furniture assembly" },
+  Nettoyage: { fr: "Nettoyage", en: "Cleaning" },
+  Livraison: { fr: "Livraison", en: "Delivery" },
+  "Services informatiques": { fr: "Services informatiques", en: "IT services" },
+  "Vente en ligne": { fr: "Vente en ligne", en: "Online sales" },
+  Autre: { fr: "Autre", en: "Other" }
+};
+
+export const categoryTranslations: Record<string, Record<Language, string>> = {
+  "Revenus de service": { fr: "Revenus de service", en: "Service revenue" },
+  Pourboires: { fr: "Pourboires", en: "Tips" },
+  "Frais de déplacement facturés": { fr: "Frais de déplacement facturés", en: "Billed travel fees" },
+  Outils: { fr: "Outils", en: "Tools" },
+  Fournitures: { fr: "Fournitures", en: "Supplies" },
+  "Essence / déplacement": { fr: "Essence / déplacement", en: "Fuel / travel" },
+  Publicité: { fr: "Publicité", en: "Advertising" },
+  Téléphone: { fr: "Téléphone", en: "Phone" },
+  Assurance: { fr: "Assurance", en: "Insurance" },
+  "Frais de plateforme": { fr: "Frais de plateforme", en: "Platform fees" },
+  "Contrats réguliers": { fr: "Contrats réguliers", en: "Regular contracts" },
+  "Produits de nettoyage": { fr: "Produits de nettoyage", en: "Cleaning products" },
+  Transport: { fr: "Transport", en: "Transportation" },
+  Équipement: { fr: "Équipement", en: "Equipment" },
+  "Revenus de livraison": { fr: "Revenus de livraison", en: "Delivery revenue" },
+  Bonus: { fr: "Bonus", en: "Bonus" },
+  Essence: { fr: "Essence", en: "Fuel" },
+  "Entretien véhicule": { fr: "Entretien véhicule", en: "Vehicle maintenance" },
+  Consultation: { fr: "Consultation", en: "Consulting" },
+  "Support technique": { fr: "Support technique", en: "Technical support" },
+  Logiciels: { fr: "Logiciels", en: "Software" },
+  "Matériel informatique": { fr: "Matériel informatique", en: "Computer hardware" },
+  Internet: { fr: "Internet", en: "Internet" },
+  Formation: { fr: "Formation", en: "Training" },
+  "Ventes de produits": { fr: "Ventes de produits", en: "Product sales" },
+  "Frais d'expédition facturés": { fr: "Frais d'expédition facturés", en: "Billed shipping fees" },
+  Inventaire: { fr: "Inventaire", en: "Inventory" },
+  Emballage: { fr: "Emballage", en: "Packaging" },
+  Expédition: { fr: "Expédition", en: "Shipping" },
+  Ventes: { fr: "Ventes", en: "Sales" }
+};
+
+export const translateBusinessProfileName = (profile: string, language: Language) =>
+  businessProfileTranslations[profile]?.[language] ?? profile;
+
+export const translateCategoryName = (category: string, language: Language) =>
+  categoryTranslations[category]?.[language] ?? category;
 
 export const transactionKindLabels: Record<TransactionKind, Record<Language, string>> = {
   "owner-investment": { fr: "Investissement du propriétaire", en: "Owner investment" },

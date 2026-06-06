@@ -53,8 +53,10 @@ import {
 import { createBackup, getBackupFilename, parseBackup } from "@/lib/backup";
 import {
   Language,
+  translateBusinessProfileName,
   transactionKindLabels,
   translateAccountName,
+  translateCategoryName,
   translatePaymentMethod,
   translateStatementName,
   translations
@@ -108,52 +110,52 @@ const getAccountBalance = (transactions: Transaction[], accountName: string) =>
 
 const lessons = [
   {
-    title: "Actifs (Assets)",
+    title: "Actifs",
     icon: WalletCards,
     text: "Les actifs sont ce que l'entreprise possède ou contrôle: argent, équipement, fournitures ou montants à recevoir."
   },
   {
-    title: "Passifs (Liabilities)",
+    title: "Passifs",
     icon: CreditCard,
     text: "Les passifs sont les dettes: fournisseurs à payer, emprunts bancaires ou obligations futures."
   },
   {
-    title: "Capitaux propres (Equity)",
+    title: "Capitaux propres",
     icon: PiggyBank,
     text: "Les capitaux propres représentent la part du propriétaire: apports, bénéfices conservés et retraits."
   },
   {
-    title: "Revenus (Revenue)",
+    title: "Revenus",
     icon: ArrowUpRight,
     text: "Les revenus viennent des ventes ou services. Ils augmentent le bénéfice et donc les capitaux propres."
   },
   {
-    title: "Dépenses (Expenses)",
+    title: "Dépenses",
     icon: ArrowDownRight,
     text: "Les dépenses sont les coûts nécessaires pour gagner des revenus. Elles diminuent le bénéfice."
   },
   {
-    title: "Débit et crédit (Debit and Credit)",
+    title: "Débit et crédit",
     icon: Scale,
     text: "Chaque transaction a au moins un débit et un crédit. Les actifs et dépenses augmentent au débit; les passifs, revenus et capitaux propres augmentent au crédit."
   },
   {
-    title: "Écritures de journal (Journal Entries)",
+    title: "Écritures de journal",
     icon: ReceiptText,
     text: "Une écriture de journal décrit quels comptes changent, avec les montants au débit et au crédit."
   },
   {
-    title: "Comptes en T (T-Accounts)",
+    title: "Comptes en T",
     icon: ClipboardList,
     text: "Un compte en T sépare les débits à gauche et les crédits à droite pour visualiser le solde d'un compte."
   },
   {
-    title: "Balance de vérification (Trial Balance)",
+    title: "Balance de vérification",
     icon: ShieldCheck,
     text: "La balance de vérification liste tous les comptes. Le total des débits doit égaler le total des crédits."
   },
   {
-    title: "États financiers (Financial Statements)",
+    title: "États financiers",
     icon: FileBarChart2,
     text: "L'état des résultats montre le bénéfice. Le bilan montre actifs, passifs et capitaux propres à une date donnée."
   }
@@ -358,43 +360,43 @@ const englishQuizQuestions: QuizQuestion[] = [
 ];
 
 const englishLessons: Record<string, { title: string; text: string }> = {
-  "Actifs (Assets)": {
+  Actifs: {
     title: "Assets",
     text: "Assets are what the business owns or controls: cash, equipment, supplies, or amounts to receive."
   },
-  "Passifs (Liabilities)": {
+  Passifs: {
     title: "Liabilities",
     text: "Liabilities are debts: suppliers to pay, bank loans, or future obligations."
   },
-  "Capitaux propres (Equity)": {
+  "Capitaux propres": {
     title: "Owner's Equity",
     text: "Owner's equity represents the owner's share: investments, retained profit, and withdrawals."
   },
-  "Revenus (Revenue)": {
+  Revenus: {
     title: "Revenue",
     text: "Revenue comes from sales or services. It increases profit and therefore owner's equity."
   },
-  "Dépenses (Expenses)": {
+  Dépenses: {
     title: "Expenses",
     text: "Expenses are the costs needed to earn revenue. They reduce profit."
   },
-  "Débit et crédit (Debit and Credit)": {
+  "Débit et crédit": {
     title: "Debit and Credit",
     text: "Every transaction has at least one debit and one credit. Assets and expenses increase with debits; liabilities, revenue, and owner's equity increase with credits."
   },
-  "Écritures de journal (Journal Entries)": {
+  "Écritures de journal": {
     title: "Journal Entries",
     text: "A journal entry shows which accounts change, with amounts recorded as debits and credits."
   },
-  "Comptes en T (T-Accounts)": {
+  "Comptes en T": {
     title: "T-Accounts",
     text: "A T-account separates debits on the left and credits on the right to visualize an account balance."
   },
-  "Balance de vérification (Trial Balance)": {
+  "Balance de vérification": {
     title: "Trial Balance",
     text: "The trial balance lists all accounts. Total debits must equal total credits."
   },
-  "États financiers (Financial Statements)": {
+  "États financiers": {
     title: "Financial Statements",
     text: "The income statement shows profit. The balance sheet shows assets, liabilities, and owner's equity at a given date."
   }
@@ -548,7 +550,7 @@ const downloadTransactionsCsv = (transactions: Transaction[], period: PeriodStat
     transaction.date,
     transactionKindLabels[transaction.kind][language],
     transaction.label,
-    transaction.category,
+    translateCategoryName(transaction.category ?? "", language),
     translatePaymentMethod(transaction.paymentMethod, language),
     transaction.partyName,
     transaction.note,
@@ -795,7 +797,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
               aria-label={ui.mobileMenu.close}
               onClick={() => setMobileMenuOpen(false)}
             />
-            <div className="absolute inset-x-3 bottom-3 rounded-lg border border-line bg-white p-4 shadow-xl">
+            <div className="absolute bottom-0 right-0 top-0 flex w-full max-w-sm flex-col border-l border-line bg-white p-4 shadow-xl">
               <div className="mb-4 flex items-center justify-between gap-3">
                 <div>
                   <p className="label">{ui.mobileMenu.menu}</p>
@@ -806,7 +808,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                   {ui.mobileMenu.close}
                 </button>
               </div>
-              <nav className="grid gap-2">
+              <nav className="grid gap-2 pt-2">
                 {navigation.map((item) => {
                   const Icon = item.icon;
                   const isActive = tab === item.id;
@@ -933,6 +935,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                   backupInputRef={backupInputRef}
                   onImportBackupChange={importBackup}
                   ui={ui}
+                  language={language}
                 />
               )}
             </>
@@ -1457,12 +1460,12 @@ function AddTransaction({
                   <select id="category" value={selectedCategory} onChange={(event) => setCategory(event.target.value)} className="input mt-2">
                     {categoryChoices.map((option) => (
                       <option key={option} value={option}>
-                        {option}
+                        {translateCategoryName(option, language)}
                       </option>
                     ))}
                   </select>
                   <p className="mt-2 text-sm text-moss">
-                    {ui.add.categorySuggestion}: {businessProfile.profile}.
+                    {ui.add.categorySuggestion}: {translateBusinessProfileName(businessProfile.profile, language)}.
                   </p>
                 </>
               ) : (
@@ -1798,11 +1801,13 @@ function BusinessProfileView({
   profile,
   setProfile,
   ui,
+  language,
   showHeader = true
 }: {
   profile: BusinessProfile;
   setProfile: (profile: BusinessProfile) => void;
   ui: AppTranslations;
+  language: Language;
   showHeader?: boolean;
 }) {
   const selectedProfile = getBusinessProfileDefinition(profile);
@@ -1829,15 +1834,15 @@ function BusinessProfileView({
         >
           {businessProfiles.map((definition) => (
             <option key={definition.profile} value={definition.profile}>
-              {definition.profile}
+              {translateBusinessProfileName(definition.profile, language)}
             </option>
           ))}
         </select>
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <CategoryPanel title={ui.profile.revenues} categories={selectedProfile.revenues} />
-        <CategoryPanel title={ui.profile.expenses} categories={selectedProfile.expenses} />
+        <CategoryPanel title={ui.profile.revenues} categories={selectedProfile.revenues} language={language} />
+        <CategoryPanel title={ui.profile.expenses} categories={selectedProfile.expenses} language={language} />
       </div>
     </div>
   );
@@ -1855,7 +1860,8 @@ function Settings({
   backupMessage,
   backupInputRef,
   onImportBackupChange,
-  ui
+  ui,
+  language
 }: {
   profile: BusinessProfile;
   setProfile: (profile: BusinessProfile) => void;
@@ -1869,6 +1875,7 @@ function Settings({
   backupInputRef: RefObject<HTMLInputElement | null>;
   onImportBackupChange: (event: ChangeEvent<HTMLInputElement>) => void;
   ui: AppTranslations;
+  language: Language;
 }) {
   return (
     <div className="space-y-5">
@@ -1878,7 +1885,7 @@ function Settings({
         eyebrow={ui.applicationMvp}
       />
 
-      <BusinessProfileView profile={profile} setProfile={setProfile} ui={ui} showHeader={false} />
+      <BusinessProfileView profile={profile} setProfile={setProfile} ui={ui} language={language} showHeader={false} />
 
       <section className="grid gap-5 lg:grid-cols-2">
         <article className="panel p-4 sm:p-5">
@@ -1945,14 +1952,14 @@ function Settings({
   );
 }
 
-function CategoryPanel({ title, categories }: { title: string; categories: string[] }) {
+function CategoryPanel({ title, categories, language }: { title: string; categories: string[]; language: Language }) {
   return (
     <section className="panel p-4 sm:p-5">
       <h2 className="text-lg font-bold">{title}</h2>
       <div className="mt-4 flex flex-wrap gap-2">
         {categories.map((category) => (
           <span key={category} className="border border-line bg-mint px-3 py-2 text-sm font-semibold text-moss" style={{ borderRadius: 6 }}>
-            {category}
+            {translateCategoryName(category, language)}
           </span>
         ))}
       </div>
@@ -2065,7 +2072,7 @@ function TransactionList({
               <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
                 {transaction.category ? (
                   <span className="border border-line bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
-                    {ui.transactionDetails.category}: {transaction.category}
+                    {ui.transactionDetails.category}: {translateCategoryName(transaction.category, language)}
                   </span>
                 ) : null}
                 <span className="border border-line bg-white px-2 py-1" style={{ borderRadius: 6 }}>
@@ -2122,7 +2129,7 @@ function AccountingExplanation({ transaction, ui, language }: { transaction: Tra
         <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
           {transaction.category ? (
             <span className="border border-line bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
-              {ui.transactionDetails.category}: {transaction.category}
+              {ui.transactionDetails.category}: {translateCategoryName(transaction.category, language)}
             </span>
           ) : null}
           <span className="border border-line bg-white px-2 py-1" style={{ borderRadius: 6 }}>

@@ -26,8 +26,30 @@ const transactionKinds: TransactionKind[] = [
 
 const isValidDateInput = (value: unknown) => typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
 
+const repairKnownMojibake = (value: string) =>
+  value
+    .replaceAll("\u00c3\u00a9", "é")
+    .replaceAll("\u00c3\u00a8", "è")
+    .replaceAll("\u00c3\u00aa", "ê")
+    .replaceAll("\u00c3\u00a0", "à")
+    .replaceAll("\u00c3\u00b4", "ô")
+    .replaceAll("\u00c3\u00bb", "û")
+    .replaceAll("\u00c3\u00a7", "ç")
+    .replaceAll("\u00c3\u2030", "É");
+
+const normalizePaymentMethod = (value: unknown): PaymentMethod | undefined => {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+
+  const repaired = repairKnownMojibake(value);
+  return paymentMethods.includes(repaired as PaymentMethod) ? (repaired as PaymentMethod) : undefined;
+};
+
 const isPaymentMethod = (value: unknown): value is PaymentMethod =>
-  typeof value === "string" && paymentMethods.includes(value as PaymentMethod);
+  normalizePaymentMethod(value) !== undefined;
+
+const normalizeCategory = (value: unknown) => (typeof value === "string" ? repairKnownMojibake(value) : "");
 
 type NormalizableTransaction = Partial<Omit<Transaction, "amount">> & {
   amount: number | string;
@@ -95,9 +117,9 @@ export const normalizeTransactionsWithReport = (value: unknown): NormalizedTrans
       id: transaction.id ?? crypto.randomUUID(),
       amount: getNumericAmount(transaction.amount),
       date: transaction.date ?? formatLocalDateInput(),
-      paymentMethod: transaction.paymentMethod ?? "Autre",
+      paymentMethod: normalizePaymentMethod(transaction.paymentMethod) ?? "Autre",
       partyName: transaction.partyName ?? "",
-      category: transaction.category ?? "",
+      category: normalizeCategory(transaction.category),
       note: transaction.note ?? "",
       isSample: transaction.isSample ?? false,
       generated: generateAccounting(transaction.kind, getNumericAmount(transaction.amount))
