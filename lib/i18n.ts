@@ -152,7 +152,20 @@ export const translations = {
       step3: "Étape 3: Consultez vos rapports et apprenez la comptabilité",
       step1Text: "Ma Petite Compta proposera des catégories adaptées à votre activité.",
       step2Text: "Enregistrez un revenu, une dépense, un investissement ou un achat.",
-      step3Text: "Vos écritures alimentent automatiquement le tableau de bord et les rapports."
+      step3Text: "Vos écritures alimentent automatiquement le tableau de bord et les rapports.",
+      sampleTitle: "Vous voulez tester sans risque ?",
+      sampleText: "Ajoutez des exemples fictifs pour voir le tableau de bord, les rapports et la balance de vérification se remplir.",
+      sampleActive: "Des exemples sont actifs. Vous pouvez les supprimer quand vous êtes prêt à utiliser vos vraies données."
+    },
+    emptyStates: {
+      dashboardTitle: "Votre tableau de bord est prêt.",
+      dashboardText: "Ajoutez une transaction ou utilisez les données d'exemple pour voir vos chiffres apparaître.",
+      transactionsTitle: "Aucune transaction à afficher.",
+      transactionsText: "Ajoutez votre première transaction, utilisez les exemples ou changez le filtre de période.",
+      reportsTitle: "Vos rapports apparaîtront ici.",
+      reportsText: "Ajoutez une transaction ou des exemples pour générer l'état des résultats, le bilan et la balance de vérification.",
+      learnTitle: "Apprenez pendant que vous pratiquez.",
+      learnText: "Commencez par une leçon courte, puis testez-vous avec le quiz comptable."
     },
     periods: {
       all: "Toutes les transactions",
@@ -361,7 +374,20 @@ export const translations = {
       step3: "Step 3: Review your reports and learn accounting",
       step1Text: "Ma Petite Compta will suggest categories that fit your activity.",
       step2Text: "Record revenue, expenses, investments, or purchases.",
-      step3Text: "Your entries automatically feed the dashboard and reports."
+      step3Text: "Your entries automatically feed the dashboard and reports.",
+      sampleTitle: "Want to test safely?",
+      sampleText: "Add fictional examples to see the dashboard, reports, and trial balance fill in.",
+      sampleActive: "Examples are active. You can remove them when you are ready to use your real data."
+    },
+    emptyStates: {
+      dashboardTitle: "Your dashboard is ready.",
+      dashboardText: "Add a transaction or use example data to see your numbers appear.",
+      transactionsTitle: "No transactions to show.",
+      transactionsText: "Add your first transaction, use examples, or change the period filter.",
+      reportsTitle: "Your reports will appear here.",
+      reportsText: "Add a transaction or examples to generate the income statement, balance sheet, and trial balance.",
+      learnTitle: "Learn while you practice.",
+      learnText: "Start with a short lesson, then test yourself with the accounting quiz."
     },
     periods: {
       all: "All transactions",

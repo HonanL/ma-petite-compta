@@ -874,10 +874,13 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                   balanceSummary={balanceSummary}
                   transactions={periodTransactions}
                   hasTransactions={transactions.length > 0}
+                  hasSamples={transactions.some((transaction) => transaction.isSample)}
                   periodLabel={periodLabel}
                   onCreateTransaction={startNewTransaction}
                   onOpenSettings={() => navigateTo("settings")}
                   onOpenReports={() => navigateTo("reports")}
+                  onAddSamples={addSampleTransactions}
+                  onRemoveSamples={removeSampleTransactions}
                   onEditTransaction={startEditingTransaction}
                   onDeleteTransaction={deleteTransaction}
                   ui={ui}
@@ -890,6 +893,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                   transactions={periodTransactions}
                   periodLabel={periodLabel}
                   onCreateTransaction={startNewTransaction}
+                  onAddSamples={addSampleTransactions}
                   onEditTransaction={startEditingTransaction}
                   onDeleteTransaction={deleteTransaction}
                   ui={ui}
@@ -916,6 +920,8 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                   balanceBalances={balanceBalances}
                   balanceSummary={balanceSummary}
                   periodLabel={periodLabel}
+                  onCreateTransaction={startNewTransaction}
+                  onAddSamples={addSampleTransactions}
                   ui={ui}
                   language={language}
                 />
@@ -1034,10 +1040,13 @@ function Dashboard({
   balanceSummary,
   transactions,
   hasTransactions,
+  hasSamples,
   periodLabel,
   onCreateTransaction,
   onOpenSettings,
   onOpenReports,
+  onAddSamples,
+  onRemoveSamples,
   onEditTransaction,
   onDeleteTransaction,
   ui,
@@ -1048,10 +1057,13 @@ function Dashboard({
   balanceSummary: ReturnType<typeof calculateSummary>;
   transactions: Transaction[];
   hasTransactions: boolean;
+  hasSamples: boolean;
   periodLabel: string;
   onCreateTransaction: () => void;
   onOpenSettings: () => void;
   onOpenReports: () => void;
+  onAddSamples: () => void;
+  onRemoveSamples: () => void;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
   ui: AppTranslations;
@@ -1099,7 +1111,7 @@ function Dashboard({
             <p className="label">{ui.appName}</p>
             <h2 className="mt-2 max-w-3xl text-2xl font-bold leading-tight text-moss sm:text-4xl">{ui.heroTagline}</h2>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:min-w-48">
+          <div className="grid gap-2 sm:min-w-48 sm:grid-cols-2">
             <button type="button" onClick={onCreateTransaction} className="button-primary px-3">
               <Plus size={17} aria-hidden />
               {ui.nav.add}
@@ -1121,6 +1133,9 @@ function Dashboard({
           onOpenSettings={onOpenSettings}
           onCreateTransaction={onCreateTransaction}
           onOpenReports={onOpenReports}
+          onAddSamples={onAddSamples}
+          onRemoveSamples={onRemoveSamples}
+          hasSamples={hasSamples}
           ui={ui}
         />
       ) : null}
@@ -1155,7 +1170,14 @@ function Dashboard({
         </div>
         <TransactionList
           transactions={transactions.slice(0, 3)}
-          emptyMessage={ui.empty}
+          emptyTitle={ui.emptyStates.dashboardTitle}
+          emptyMessage={ui.emptyStates.dashboardText}
+          emptyAction={
+            <button type="button" onClick={onCreateTransaction} className="button-primary w-full sm:w-auto">
+              <Plus size={16} aria-hidden />
+              {ui.actions.newTransaction}
+            </button>
+          }
           onEditTransaction={onEditTransaction}
           onDeleteTransaction={onDeleteTransaction}
           ui={ui}
@@ -1170,11 +1192,17 @@ function Onboarding({
   onOpenSettings,
   onCreateTransaction,
   onOpenReports,
+  onAddSamples,
+  onRemoveSamples,
+  hasSamples,
   ui
 }: {
   onOpenSettings: () => void;
   onCreateTransaction: () => void;
   onOpenReports: () => void;
+  onAddSamples: () => void;
+  onRemoveSamples: () => void;
+  hasSamples: boolean;
   ui: AppTranslations;
 }) {
   const steps = [
@@ -1232,6 +1260,31 @@ function Onboarding({
           );
         })}
       </div>
+
+      <div className="mt-4 rounded-md border border-line bg-mint p-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="font-bold text-ink">{ui.onboarding.sampleTitle}</h3>
+            <p className="mt-1 text-sm leading-6 text-moss">
+              {hasSamples ? ui.onboarding.sampleActive : ui.onboarding.sampleText}
+            </p>
+          </div>
+          <div className="grid gap-2 sm:min-w-64 sm:grid-cols-2">
+            <button type="button" onClick={onAddSamples} className="button-primary px-3">
+              <Plus size={16} aria-hidden />
+              {ui.actions.addSamples}
+            </button>
+            <button
+              type="button"
+              onClick={onRemoveSamples}
+              disabled={!hasSamples}
+              className="button-secondary px-3 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {ui.actions.removeSamples}
+            </button>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -1240,6 +1293,7 @@ function TransactionsPageView({
   transactions,
   periodLabel,
   onCreateTransaction,
+  onAddSamples,
   onEditTransaction,
   onDeleteTransaction,
   ui,
@@ -1248,6 +1302,7 @@ function TransactionsPageView({
   transactions: Transaction[];
   periodLabel: string;
   onCreateTransaction: () => void;
+  onAddSamples: () => void;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
   ui: AppTranslations;
@@ -1278,7 +1333,19 @@ function TransactionsPageView({
         </div>
         <TransactionList
           transactions={transactions}
-          emptyMessage={ui.empty}
+          emptyTitle={ui.emptyStates.transactionsTitle}
+          emptyMessage={ui.emptyStates.transactionsText}
+          emptyAction={
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={onCreateTransaction} className="button-primary">
+                <Plus size={16} aria-hidden />
+                {ui.actions.newTransaction}
+              </button>
+              <button type="button" onClick={onAddSamples} className="button-secondary">
+                {ui.actions.addSamples}
+              </button>
+            </div>
+          }
           onEditTransaction={onEditTransaction}
           onDeleteTransaction={onDeleteTransaction}
           ui={ui}
@@ -1526,6 +1593,8 @@ function Reports({
   balanceBalances,
   balanceSummary,
   periodLabel,
+  onCreateTransaction,
+  onAddSamples,
   ui,
   language
 }: {
@@ -1534,6 +1603,8 @@ function Reports({
   balanceBalances: ReturnType<typeof calculateAccountBalances>;
   balanceSummary: ReturnType<typeof calculateSummary>;
   periodLabel: string;
+  onCreateTransaction: () => void;
+  onAddSamples: () => void;
   ui: AppTranslations;
   language: Language;
 }) {
@@ -1574,7 +1645,21 @@ function Reports({
         {ui.reports.periodShown}: {periodLabel}
       </p>
       {!transactions.length ? (
-        <EmptyState title={ui.empty} text={ui.emptyHelp} />
+        <EmptyState
+          title={ui.emptyStates.reportsTitle}
+          text={ui.emptyStates.reportsText}
+          action={
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button type="button" onClick={onCreateTransaction} className="button-primary">
+                <Plus size={16} aria-hidden />
+                {ui.actions.newTransaction}
+              </button>
+              <button type="button" onClick={onAddSamples} className="button-secondary">
+                {ui.actions.addSamples}
+              </button>
+            </div>
+          }
+        />
       ) : null}
       <div className="grid gap-5 xl:grid-cols-2">
         <section className="panel p-4 sm:p-5">
@@ -1687,6 +1772,7 @@ function Learning({ ui, language }: { ui: AppTranslations; language: Language })
   return (
     <div className="space-y-5">
       <Header title={ui.learn.title} subtitle={ui.learn.subtitle} eyebrow={ui.applicationMvp} />
+      <EmptyState title={ui.emptyStates.learnTitle} text={ui.emptyStates.learnText} />
       <div className="grid gap-3 md:grid-cols-2">
         {lessons.map((lesson) => {
           const Icon = lesson.icon;
@@ -2016,32 +2102,37 @@ function FormSection({ title, children }: { title: string; children: React.React
   );
 }
 
-function EmptyState({ title, text }: { title: string; text: string }) {
+function EmptyState({ title, text, action }: { title: string; text: string; action?: React.ReactNode }) {
   return (
     <div className="soft-card text-center">
       <p className="font-bold text-ink">{title}</p>
       <p className="mt-2 text-sm leading-6 text-moss">{text}</p>
+      {action ? <div className="mx-auto mt-4 max-w-md">{action}</div> : null}
     </div>
   );
 }
 
 function TransactionList({
   transactions,
+  emptyTitle,
   emptyMessage,
+  emptyAction,
   onEditTransaction,
   onDeleteTransaction,
   ui,
   language
 }: {
   transactions: Transaction[];
+  emptyTitle?: string;
   emptyMessage?: string;
+  emptyAction?: React.ReactNode;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
   ui: AppTranslations;
   language: Language;
 }) {
   if (!transactions.length) {
-    return <EmptyState title={emptyMessage ?? ui.empty} text={ui.emptyHelp} />;
+    return <EmptyState title={emptyTitle ?? ui.empty} text={emptyMessage ?? ui.emptyHelp} action={emptyAction} />;
   }
 
   const confirmDelete = (transaction: Transaction) => {
