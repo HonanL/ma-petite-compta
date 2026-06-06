@@ -21,6 +21,7 @@ import {
   ReceiptText,
   RotateCcw,
   Scale,
+  Search,
   ShieldCheck,
   Upload,
   WalletCards,
@@ -484,6 +485,12 @@ const filterTransactionsUntilPeriodEnd = (transactions: Transaction[], period: P
   return transactions.filter((transaction) => hasUsableDate(transaction) && transaction.date <= endDate);
 };
 
+const normalizeSearchText = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
 const getPeriodLabel = (period: PeriodState, language: Language) => {
   const range = getPeriodRange(period);
   const labels = translations[language].periods;
@@ -890,7 +897,6 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                   setPeriod={setPeriod}
                   periodLabel={periodLabel}
                   transactionCount={periodTransactions.length}
-                  onExport={() => downloadTransactionsCsv(periodTransactions, period, language)}
                   ui={ui}
                 />
               ) : null}
@@ -932,6 +938,7 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
                   onAddSamples={addSampleTransactions}
                   onEditTransaction={startEditingTransaction}
                   onDeleteTransaction={deleteTransaction}
+                  onExportTransactions={(visibleTransactions) => downloadTransactionsCsv(visibleTransactions, period, language)}
                   ui={ui}
                   language={language}
                 />
@@ -1002,7 +1009,7 @@ function PeriodSelector({
   setPeriod: (period: PeriodState) => void;
   periodLabel: string;
   transactionCount: number;
-  onExport: () => void;
+  onExport?: () => void;
   ui: AppTranslations;
 }) {
   return (
@@ -1060,14 +1067,16 @@ function PeriodSelector({
         <p className="text-sm font-semibold text-moss">
           {ui.reports.periodShown}: {periodLabel}
         </p>
-        <button
-          type="button"
-          onClick={onExport}
-          className="button-secondary w-full sm:w-auto"
-        >
-          <Download size={16} aria-hidden />
-          {ui.actions.exportCsv} ({transactionCount})
-        </button>
+        {onExport ? (
+          <button
+            type="button"
+            onClick={onExport}
+            className="button-secondary w-full sm:w-auto"
+          >
+            <Download size={16} aria-hidden />
+            {ui.actions.exportCsv} ({transactionCount})
+          </button>
+        ) : null}
       </div>
     </section>
   );
@@ -1359,6 +1368,7 @@ function TransactionsPageView({
   onAddSamples,
   onEditTransaction,
   onDeleteTransaction,
+  onExportTransactions,
   ui,
   language
 }: {
@@ -1368,14 +1378,70 @@ function TransactionsPageView({
   onAddSamples: () => void;
   onEditTransaction: (transaction: Transaction) => void;
   onDeleteTransaction: (id: string) => void;
+  onExportTransactions: (transactions: Transaction[]) => void;
   ui: AppTranslations;
   language: Language;
 }) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [kindFilter, setKindFilter] = useState<TransactionKind | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState("all");
+  const [paymentFilter, setPaymentFilter] = useState<PaymentMethod | "all">("all");
+
+  const categoryOptions = useMemo(
+    () =>
+      Array.from(
+        new Set(transactions.map((transaction) => transaction.category).filter((category): category is string => Boolean(category)))
+      ).sort((first, second) => translateCategoryName(first, language).localeCompare(translateCategoryName(second, language))),
+    [transactions, language]
+  );
+
+  const filteredTransactions = useMemo(() => {
+    const normalizedQuery = normalizeSearchText(searchQuery.trim());
+
+    return transactions.filter((transaction) => {
+      const matchesKind = kindFilter === "all" || transaction.kind === kindFilter;
+      const matchesCategory = categoryFilter === "all" || transaction.category === categoryFilter;
+      const matchesPayment = paymentFilter === "all" || transaction.paymentMethod === paymentFilter;
+
+      if (!matchesKind || !matchesCategory || !matchesPayment) {
+        return false;
+      }
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      const searchableText = [
+        transaction.label,
+        transaction.category ? translateCategoryName(transaction.category, language) : "",
+        transaction.category ?? "",
+        translatePaymentMethod(transaction.paymentMethod, language),
+        transaction.paymentMethod,
+        transaction.partyName ?? "",
+        transaction.note ?? "",
+        String(transaction.amount),
+        formatCurrency(transaction.amount)
+      ].join(" ");
+
+      return normalizeSearchText(searchableText).includes(normalizedQuery);
+    });
+  }, [transactions, searchQuery, kindFilter, categoryFilter, paymentFilter, language]);
+
+  const filteredSummary = useMemo(() => calculateSummary(filteredTransactions, null), [filteredTransactions]);
+  const hasActiveFilters = Boolean(searchQuery.trim()) || kindFilter !== "all" || categoryFilter !== "all" || paymentFilter !== "all";
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setKindFilter("all");
+    setCategoryFilter("all");
+    setPaymentFilter("all");
+  };
+
   return (
     <div className="space-y-5">
       <Header
         title={ui.nav.transactions}
-        subtitle={ui.dashboard.recent}
+        subtitle={ui.transactionsPage.subtitle}
         eyebrow={ui.applicationMvp}
         action={
           <button type="button" onClick={onCreateTransaction} className="button-primary w-full sm:w-auto">
@@ -1388,18 +1454,121 @@ function TransactionsPageView({
       <section className="panel p-4 sm:p-5">
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-ink">{ui.dashboard.recent}</h2>
+            <h2 className="text-lg font-bold text-ink">{ui.transactionsPage.listTitle}</h2>
             <p className="text-sm font-semibold text-moss">
               {ui.reports.periodShown}: {periodLabel}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => onExportTransactions(filteredTransactions)}
+            disabled={!filteredTransactions.length}
+            className="button-secondary w-full sm:w-auto disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Download size={16} aria-hidden />
+            {ui.actions.exportCsv} ({filteredTransactions.length})
+          </button>
         </div>
+
+        <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard label={ui.transactionsPage.transactionCount} value={String(filteredTransactions.length)} tone="bg-moss text-white" />
+          <MetricCard label={ui.dashboard.revenue} value={formatCurrency(filteredSummary.revenue)} tone="bg-accent text-ink" />
+          <MetricCard label={ui.dashboard.expenses} value={formatCurrency(filteredSummary.expenses)} tone="bg-white text-clay" />
+          <MetricCard
+            label={ui.transactionsPage.netResult}
+            value={formatCurrency(filteredSummary.netIncome)}
+            tone={filteredSummary.netIncome >= 0 ? "bg-accent text-ink" : "bg-white text-clay"}
+          />
+        </div>
+
+        <div className="mb-5 rounded-md border border-line bg-mint p-3 sm:p-4">
+          <div className="grid gap-3 lg:grid-cols-[1.3fr_1fr_1fr_1fr_auto]">
+            <label className="block">
+              <span className="label">{ui.transactionsPage.searchLabel}</span>
+              <span className="mt-1 flex min-h-12 items-center gap-2 rounded-md border border-line bg-white px-3">
+                <Search size={18} className="shrink-0 text-moss" aria-hidden />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder={ui.transactionsPage.searchPlaceholder}
+                  className="min-h-10 w-full bg-transparent text-sm outline-none placeholder:text-moss/70"
+                />
+              </span>
+            </label>
+
+            <Field label={ui.transactionsPage.typeFilter} id="transaction-kind-filter">
+              <select
+                id="transaction-kind-filter"
+                value={kindFilter}
+                onChange={(event) => setKindFilter(event.target.value as TransactionKind | "all")}
+                className="input"
+              >
+                <option value="all">{ui.transactionsPage.allTypes}</option>
+                {transactionTemplates.map((template) => (
+                  <option key={template.kind} value={template.kind}>
+                    {transactionKindLabels[template.kind][language]}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label={ui.transactionsPage.categoryFilter} id="transaction-category-filter">
+              <select
+                id="transaction-category-filter"
+                value={categoryFilter}
+                onChange={(event) => setCategoryFilter(event.target.value)}
+                className="input"
+              >
+                <option value="all">{ui.transactionsPage.allCategories}</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {translateCategoryName(category, language)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field label={ui.transactionsPage.paymentFilter} id="transaction-payment-filter">
+              <select
+                id="transaction-payment-filter"
+                value={paymentFilter}
+                onChange={(event) => setPaymentFilter(event.target.value as PaymentMethod | "all")}
+                className="input"
+              >
+                <option value="all">{ui.transactionsPage.allPayments}</option>
+                {paymentMethods.map((method) => (
+                  <option key={method} value={method}>
+                    {translatePaymentMethod(method, language)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={clearFilters}
+                disabled={!hasActiveFilters}
+                className="button-secondary min-h-12 w-full px-3 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {ui.transactionsPage.clearFilters}
+              </button>
+            </div>
+          </div>
+        </div>
+
         <TransactionList
-          transactions={transactions}
-          emptyTitle={ui.emptyStates.transactionsTitle}
-          emptyMessage={ui.emptyStates.transactionsText}
+          transactions={filteredTransactions}
+          emptyTitle={hasActiveFilters ? ui.transactionsPage.noMatchesTitle : ui.emptyStates.transactionsTitle}
+          emptyMessage={hasActiveFilters ? ui.transactionsPage.noMatchesText : ui.emptyStates.transactionsText}
           emptyAction={
             <div className="grid gap-2 sm:grid-cols-2">
+              {hasActiveFilters ? (
+                <button type="button" onClick={clearFilters} className="button-secondary sm:col-span-2">
+                  {ui.transactionsPage.clearFilters}
+                </button>
+              ) : null}
               <button type="button" onClick={onCreateTransaction} className="button-primary">
                 <Plus size={16} aria-hidden />
                 {ui.actions.newTransaction}
@@ -2253,6 +2422,15 @@ function EmptyState({ title, text, action }: { title: string; text: string; acti
   );
 }
 
+function MetricCard({ label, value, tone }: { label: string; value: string; tone: string }) {
+  return (
+    <div className={`rounded-md border border-line p-4 shadow-sm ${tone}`}>
+      <p className="text-xs font-bold uppercase tracking-wide opacity-80">{label}</p>
+      <p className="mt-2 text-xl font-extrabold leading-tight">{value}</p>
+    </div>
+  );
+}
+
 function TransactionList({
   transactions,
   emptyTitle,
@@ -2288,20 +2466,25 @@ function TransactionList({
     <div className="grid gap-3">
       {transactions.map((transaction) => (
         <article key={transaction.id} className="soft-card">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="font-bold">{transaction.label}</p>
+              <div className="flex flex-wrap items-start gap-2">
+                <div>
+                  <p className="text-lg font-extrabold leading-snug text-ink">{transaction.label}</p>
+                  <p className="mt-1 text-sm font-semibold text-moss">
+                    {formatDisplayDate(transaction.date, language)}
+                  </p>
+                </div>
                 {transaction.isSample ? (
                   <span className="border border-accent/40 bg-mint px-2 py-1 text-[10px] font-bold uppercase text-moss" style={{ borderRadius: 6 }}>
                     {ui.sampleBadge}
                   </span>
                 ) : null}
               </div>
-              <p className="text-sm text-moss">
-                {formatDisplayDate(transaction.date, language)} - {transactionKindLabels[transaction.kind][language]}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-moss">
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-moss">
+                <span className="border border-moss/20 bg-mint px-2 py-1 text-ink" style={{ borderRadius: 6 }}>
+                  {transactionKindLabels[transaction.kind][language]}
+                </span>
                 {transaction.category ? (
                   <span className="border border-line bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
                     {ui.transactionDetails.category}: {translateCategoryName(transaction.category, language)}
@@ -2342,7 +2525,10 @@ function TransactionList({
               </div>
             </div>
           </div>
-          <p className="mt-2 text-sm leading-6 text-moss">{getDisplayedExplanation(transaction, language)}</p>
+          <div className="mt-4 rounded-md border border-line bg-mint p-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-moss">{ui.transactionDetails.explanation}</p>
+            <p className="mt-1 text-sm leading-6 text-moss">{getDisplayedExplanation(transaction, language)}</p>
+          </div>
         </article>
       ))}
     </div>

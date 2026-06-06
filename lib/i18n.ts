@@ -77,6 +77,23 @@ export const translations = {
       healthZero: "Aucun bénéfice pour le moment sur cette période. Ajoutez des revenus ou vérifiez vos dépenses.",
       healthNegative: "Les dépenses sont supérieures aux revenus sur cette période. Ce n'est pas grave, mais c'est un signal à surveiller."
     },
+    transactionsPage: {
+      subtitle: "Recherchez, filtrez et gérez vos opérations.",
+      listTitle: "Liste des transactions",
+      searchLabel: "Recherche",
+      searchPlaceholder: "Rechercher une transaction...",
+      typeFilter: "Type",
+      categoryFilter: "Catégorie",
+      paymentFilter: "Paiement",
+      allTypes: "Tous les types",
+      allCategories: "Toutes les catégories",
+      allPayments: "Tous les paiements",
+      clearFilters: "Effacer les filtres",
+      transactionCount: "Transactions",
+      netResult: "Résultat net",
+      noMatchesTitle: "Aucune transaction ne correspond aux filtres.",
+      noMatchesText: "Essayez une autre recherche, changez les filtres ou ajoutez une nouvelle transaction."
+    },
     add: {
       title: "Ajouter une transaction",
       editTitle: "Modifier la transaction",
@@ -323,6 +340,23 @@ export const translations = {
       healthPositive: "Your business is profitable for this period: revenue is higher than expenses.",
       healthZero: "There is no profit yet for this period. Add revenue or review your expenses.",
       healthNegative: "Expenses are higher than revenue for this period. It is not scary, but it is a signal to watch."
+    },
+    transactionsPage: {
+      subtitle: "Search, filter, and manage your activity.",
+      listTitle: "Transaction list",
+      searchLabel: "Search",
+      searchPlaceholder: "Search transactions...",
+      typeFilter: "Type",
+      categoryFilter: "Category",
+      paymentFilter: "Payment",
+      allTypes: "All types",
+      allCategories: "All categories",
+      allPayments: "All payments",
+      clearFilters: "Clear filters",
+      transactionCount: "Transactions",
+      netResult: "Net result",
+      noMatchesTitle: "No transactions match these filters.",
+      noMatchesText: "Try another search, change the filters, or add a new transaction."
     },
     add: {
       title: "Add transaction",
