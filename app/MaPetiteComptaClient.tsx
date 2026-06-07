@@ -641,7 +641,7 @@ const transactionTypeHelpers: Record<TransactionKind, Record<Language, string>> 
   }
 };
 
-export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }) {
+export default function MaPetiteComptaClient({ activePage, editTransactionId = null }: { activePage: Tab; editTransactionId?: string | null }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(activePage);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -671,6 +671,11 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
   const balanceSummary = useMemo(() => calculateSummary(balanceTransactions, null), [balanceTransactions]);
   const periodLabel = getPeriodLabel(period, language);
   const businessProfile = getBusinessProfileDefinition(profile);
+  const routeEditingTransaction =
+    tab === "add" && editTransactionId
+      ? transactions.find((transaction) => transaction.id === editTransactionId) ?? null
+      : null;
+  const effectiveEditingTransaction = routeEditingTransaction ?? editingTransaction;
 
   const navigateTo = (nextTab: Tab) => {
     setTab(nextTab);
@@ -688,7 +693,9 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
 
   const startEditingTransaction = (transaction: Transaction) => {
     setEditingTransaction(transaction);
-    navigateTo("add");
+    setTab("add");
+    setMobileMenuOpen(false);
+    router.push(`/transactions/new?edit=${encodeURIComponent(transaction.id)}`);
   };
 
   const stopEditingTransaction = () => {
@@ -698,7 +705,6 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
   const saveEditedTransaction = (transaction: Transaction) => {
     updateTransaction(transaction);
     setEditingTransaction(null);
-    navigateTo("transactions");
   };
 
   const startNewTransaction = () => {
@@ -948,13 +954,13 @@ export default function MaPetiteComptaClient({ activePage }: { activePage: Tab }
               )}
               {tab === "add" && (
                 <AddTransaction
-                  key={editingTransaction?.id ?? "new"}
+                  key={effectiveEditingTransaction?.id ?? "new"}
                   onAdd={addTransaction}
                   onUpdate={saveEditedTransaction}
                   onCancelEdit={stopEditingTransaction}
                   onOpenTransactions={() => navigateTo("transactions")}
                   onOpenReports={() => navigateTo("reports")}
-                  editingTransaction={editingTransaction}
+                  editingTransaction={effectiveEditingTransaction}
                   businessProfile={businessProfile}
                   transactions={transactions}
                   ui={ui}
@@ -1389,6 +1395,8 @@ function TransactionsPageView({
   const [kindFilter, setKindFilter] = useState<TransactionKind | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [paymentFilter, setPaymentFilter] = useState<PaymentMethod | "all">("all");
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const deleteMessageRef = useRef<HTMLParagraphElement>(null);
 
   const categoryOptions = useMemo(
     () =>
@@ -1440,6 +1448,14 @@ function TransactionsPageView({
     setPaymentFilter("all");
   };
 
+  const handleDeleteTransaction = (id: string) => {
+    onDeleteTransaction(id);
+    setDeleteMessage(ui.transactionsPage.deletedSuccess);
+    window.setTimeout(() => {
+      deleteMessageRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 0);
+  };
+
   return (
     <div className="space-y-5">
       <Header
@@ -1472,6 +1488,17 @@ function TransactionsPageView({
             {ui.actions.exportCsv} ({filteredTransactions.length})
           </button>
         </div>
+
+        {deleteMessage ? (
+          <p
+            ref={deleteMessageRef}
+            role="status"
+            aria-live="polite"
+            className="mb-4 rounded-md border border-accent bg-mint px-3 py-2 text-sm font-bold text-moss"
+          >
+            {deleteMessage}
+          </p>
+        ) : null}
 
         <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard label={ui.transactionsPage.transactionCount} value={String(filteredTransactions.length)} tone="bg-moss text-white" />
@@ -1582,7 +1609,7 @@ function TransactionsPageView({
             </div>
           }
           onEditTransaction={onEditTransaction}
-          onDeleteTransaction={onDeleteTransaction}
+          onDeleteTransaction={handleDeleteTransaction}
           ui={ui}
           language={language}
         />
@@ -1626,6 +1653,7 @@ function AddTransaction({
   ui: AppTranslations;
   language: Language;
 }) {
+  const router = useRouter();
   const isEditing = Boolean(editingTransaction);
   const [kind, setKind] = useState<TransactionKind>(editingTransaction?.kind ?? "client-payment");
   const [amount, setAmount] = useState(editingTransaction ? String(editingTransaction.amount) : "");
@@ -1639,6 +1667,10 @@ function AddTransaction({
   const [partyName, setPartyName] = useState(editingTransaction?.partyName ?? "");
   const [note, setNote] = useState(editingTransaction?.note ?? "");
   const [lastSavedTransaction, setLastSavedTransaction] = useState<Transaction | null>(null);
+  const [lastSaveMode, setLastSaveMode] = useState<"add" | "edit" | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
+  const successPanelRef = useRef<HTMLElement>(null);
   const baseTransactions = useMemo(
     () => transactions.filter((transaction) => transaction.id !== editingTransaction?.id),
     [transactions, editingTransaction?.id]
@@ -1667,10 +1699,28 @@ function AddTransaction({
   const showSupplierOverpaymentWarning = kind === "supplier-payment" && (Number(amount) || 0) > currentAccountsPayableBalance;
   const selectedTypeHelper = transactionTypeHelpers[kind][language];
 
+  const resetForAnotherTransaction = () => {
+    setLastSavedTransaction(null);
+    setLastSaveMode(null);
+    setKind("client-payment");
+    setAmount("");
+    setLabel("");
+    setDate(formatLocalDateInput());
+    setCategory("");
+    setPaymentMethod("Virement");
+    setPartyName("");
+    setNote("");
+    onCancelEdit();
+    router.replace("/transactions/new");
+  };
+
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (submitLockRef.current) return;
     const numericAmount = Number(amount);
     if (!numericAmount || numericAmount <= 0) return;
+    submitLockRef.current = true;
+    setIsSubmitting(true);
     const nextTransaction = createTransaction({
       kind,
       amount: numericAmount,
@@ -1684,20 +1734,35 @@ function AddTransaction({
     });
 
     if (editingTransaction) {
-      onUpdate({
+      const updatedTransaction = {
         ...nextTransaction,
-        id: editingTransaction.id
-      });
+        id: editingTransaction.id,
+        isSample: editingTransaction.isSample
+      };
+      onUpdate(updatedTransaction);
+      setLastSavedTransaction(updatedTransaction);
+      setLastSaveMode("edit");
+      window.setTimeout(() => {
+        successPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }, 0);
+      submitLockRef.current = false;
+      setIsSubmitting(false);
       return;
     }
 
     onAdd(nextTransaction);
     setLastSavedTransaction(nextTransaction);
+    setLastSaveMode("add");
+    window.setTimeout(() => {
+      successPanelRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }, 0);
     setLabel("");
     setAmount("");
     setCategory("");
     setPartyName("");
     setNote("");
+    submitLockRef.current = false;
+    setIsSubmitting(false);
   };
 
   return (
@@ -1719,15 +1784,20 @@ function AddTransaction({
         }
       />
       {lastSavedTransaction ? (
-        <section className="panel border-accent bg-mint p-4 sm:p-5">
+        <section
+          ref={successPanelRef}
+          role="status"
+          aria-live="polite"
+          className="panel border-accent bg-mint p-4 sm:p-5"
+        >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <p className="label">{ui.add.savedTitle}</p>
+              <p className="label">{lastSaveMode === "edit" ? ui.add.updatedSuccess : ui.add.savedSuccess}</p>
               <h2 className="mt-1 text-lg font-bold text-ink">{lastSavedTransaction.label}</h2>
               <p className="mt-2 text-sm leading-6 text-moss">{getDisplayedExplanation(lastSavedTransaction, language)}</p>
             </div>
             <div className="grid gap-2 sm:grid-cols-3 lg:min-w-[30rem]">
-              <button type="button" onClick={() => setLastSavedTransaction(null)} className="button-primary">
+              <button type="button" onClick={resetForAnotherTransaction} className="button-primary">
                 <Plus size={16} aria-hidden />
                 {ui.actions.newTransaction}
               </button>
@@ -1864,19 +1934,19 @@ function AddTransaction({
             </Field>
           </FormSection>
 
-          <button type="submit" className="button-primary w-full">
-            <CheckCircle2 size={17} aria-hidden />
-            {isEditing ? ui.actions.saveChanges : ui.actions.saveTransaction}
-          </button>
-        </form>
-
-          <details className="mt-4 rounded-md border border-line bg-white p-4">
+          <details className="rounded-md border border-line bg-white p-4">
             <summary className="cursor-pointer text-sm font-bold text-moss">{ui.add.viewExplanation}</summary>
             <p className="mt-2 text-sm leading-6 text-moss">{ui.add.explanationHint}</p>
             <div className="mt-4">
               <AccountingExplanation transaction={preview} ui={ui} language={language} compact />
             </div>
           </details>
+
+          <button type="submit" disabled={isSubmitting} className="button-primary w-full disabled:cursor-not-allowed disabled:opacity-60">
+            <CheckCircle2 size={17} aria-hidden />
+            {isEditing ? ui.actions.saveChanges : ui.actions.saveTransaction}
+          </button>
+        </form>
       </div>
     </div>
   );
@@ -2688,6 +2758,8 @@ function TransactionList({
   ui: AppTranslations;
   language: Language;
 }) {
+  const deletingIdsRef = useRef(new Set<string>());
+
   if (!transactions.length) {
     return <EmptyState title={emptyTitle ?? ui.empty} text={emptyMessage ?? ui.emptyHelp} action={emptyAction} />;
   }
@@ -2696,6 +2768,11 @@ function TransactionList({
     const confirmed = window.confirm(`${ui.confirmations.deleteOne} "${transaction.label}" ? ${ui.confirmations.irreversible}`);
 
     if (confirmed) {
+      if (deletingIdsRef.current.has(transaction.id)) {
+        return;
+      }
+
+      deletingIdsRef.current.add(transaction.id);
       onDeleteTransaction(transaction.id);
     }
   };

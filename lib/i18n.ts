@@ -92,7 +92,8 @@ export const translations = {
       transactionCount: "Transactions",
       netResult: "Résultat net",
       noMatchesTitle: "Aucune transaction ne correspond aux filtres.",
-      noMatchesText: "Essayez une autre recherche, changez les filtres ou ajoutez une nouvelle transaction."
+      noMatchesText: "Essayez une autre recherche, changez les filtres ou ajoutez une nouvelle transaction.",
+      deletedSuccess: "Transaction supprimée avec succès."
     },
     add: {
       title: "Ajouter une transaction",
@@ -125,13 +126,15 @@ export const translations = {
       step3: "Étape 3",
       chooseScenario: "Choisissez ce qui s'est passé",
       detailsHint: "Ajoutez les informations pratiques pour vos dossiers.",
-      explanationHint: "Ma Petite Compta transforme votre transaction en écriture comptable équilibrée.",
       livePreview: "Aperçu comptable",
       savedTitle: "Transaction enregistrée",
+      savedSuccess: "Transaction enregistrée avec succès.",
+      updatedSuccess: "Transaction modifiée avec succès.",
       savedText: "Voici l'explication comptable de la transaction que vous venez d'ajouter.",
       currentScenario: "Scénario choisi",
       changeScenario: "Changer le scénario",
-      viewExplanation: "Voir l'explication comptable"
+      viewExplanation: "Comprendre cette transaction",
+      explanationHint: "Voyez comment cette transaction affecte vos comptes avant d'enregistrer."
     },
     reports: {
       title: "Rapports",
@@ -261,7 +264,7 @@ export const translations = {
       signInSuccess: "Connexion réussie.",
       signUpSuccess: "Compte créé. Vérifiez votre email si Supabase demande une confirmation.",
       signOutSuccess: "Déconnexion réussie.",
-      missingConfig: "Supabase n'est pas encore configuré. Ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY pour activer la connexion."
+      missingConfig: "Supabase n'est pas encore configuré. Ajoutez NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY pour activer la connexion. NEXT_PUBLIC_SUPABASE_ANON_KEY reste accepté par compatibilité."
     },
     chooseProfile: "Choisir le profil",
     viewReports: "Voir les rapports",
@@ -393,7 +396,8 @@ export const translations = {
       transactionCount: "Transactions",
       netResult: "Net result",
       noMatchesTitle: "No transactions match these filters.",
-      noMatchesText: "Try another search, change the filters, or add a new transaction."
+      noMatchesText: "Try another search, change the filters, or add a new transaction.",
+      deletedSuccess: "Transaction deleted successfully."
     },
     add: {
       title: "Add transaction",
@@ -426,13 +430,15 @@ export const translations = {
       step3: "Step 3",
       chooseScenario: "Choose what happened",
       detailsHint: "Add practical information for your records.",
-      explanationHint: "Ma Petite Compta turns your transaction into a balanced accounting entry.",
       livePreview: "Accounting preview",
       savedTitle: "Transaction saved",
+      savedSuccess: "Transaction saved successfully.",
+      updatedSuccess: "Transaction updated successfully.",
       savedText: "Here is the accounting explanation for the transaction you just added.",
       currentScenario: "Selected scenario",
       changeScenario: "Change scenario",
-      viewExplanation: "View accounting explanation"
+      viewExplanation: "Understand this transaction",
+      explanationHint: "See how this transaction affects your accounts before saving."
     },
     reports: {
       title: "Reports",
@@ -562,7 +568,7 @@ export const translations = {
       signInSuccess: "Signed in successfully.",
       signUpSuccess: "Account created. Check your email if Supabase requires confirmation.",
       signOutSuccess: "Signed out successfully.",
-      missingConfig: "Supabase is not configured yet. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable sign in."
+      missingConfig: "Supabase is not configured yet. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY to enable sign in. NEXT_PUBLIC_SUPABASE_ANON_KEY is still accepted for compatibility."
     },
     chooseProfile: "Choose profile",
     viewReports: "View reports",
