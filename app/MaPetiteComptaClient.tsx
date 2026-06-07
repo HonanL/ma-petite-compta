@@ -929,11 +929,10 @@ export default function MaPetiteComptaClient({ activePage, editTransactionId = n
                   periodLabel={periodLabel}
                   onCreateTransaction={startNewTransaction}
                   onOpenSettings={() => navigateTo("settings")}
+                  onOpenTransactions={() => navigateTo("transactions")}
                   onOpenReports={() => navigateTo("reports")}
                   onAddSamples={addSampleTransactions}
                   onRemoveSamples={removeSampleTransactions}
-                  onEditTransaction={startEditingTransaction}
-                  onDeleteTransaction={deleteTransaction}
                   ui={ui}
                   language={language}
                   isPeriodFiltered={period.preset !== "all"}
@@ -1100,11 +1099,10 @@ function Dashboard({
   periodLabel,
   onCreateTransaction,
   onOpenSettings,
+  onOpenTransactions,
   onOpenReports,
   onAddSamples,
   onRemoveSamples,
-  onEditTransaction,
-  onDeleteTransaction,
   ui,
   language,
   isPeriodFiltered
@@ -1117,11 +1115,10 @@ function Dashboard({
   periodLabel: string;
   onCreateTransaction: () => void;
   onOpenSettings: () => void;
+  onOpenTransactions: () => void;
   onOpenReports: () => void;
   onAddSamples: () => void;
   onRemoveSamples: () => void;
-  onEditTransaction: (transaction: Transaction) => void;
-  onDeleteTransaction: (id: string) => void;
   ui: AppTranslations;
   language: Language;
   isPeriodFiltered: boolean;
@@ -1146,6 +1143,9 @@ function Dashboard({
       : periodSummary.netIncome === 0
         ? "border-line bg-white text-moss"
         : "border-clay/30 bg-white text-clay";
+  const [showRecentTransactions, setShowRecentTransactions] = useState(() =>
+    typeof window === "undefined" ? true : window.matchMedia("(min-width: 640px)").matches
+  );
 
   return (
     <div className="space-y-5">
@@ -1241,29 +1241,40 @@ function Dashboard({
       </div>
 
       <section className="panel p-4 sm:p-5">
-        <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-bold">{ui.dashboard.recent}</h2>
             <p className="text-sm text-moss">
               {ui.reports.periodShown}: {periodLabel}
             </p>
           </div>
+          <button type="button" onClick={onOpenTransactions} className="button-secondary w-full sm:w-auto">
+            <ReceiptText size={16} aria-hidden />
+            {ui.dashboard.manageTransactions}
+          </button>
         </div>
-        <TransactionList
-          transactions={transactions.slice(0, 3)}
-          emptyTitle={ui.emptyStates.dashboardTitle}
-          emptyMessage={ui.emptyStates.dashboardText}
-          emptyAction={
-            <button type="button" onClick={onCreateTransaction} className="button-primary w-full sm:w-auto">
-              <Plus size={16} aria-hidden />
-              {ui.actions.newTransaction}
-            </button>
-          }
-          onEditTransaction={onEditTransaction}
-          onDeleteTransaction={onDeleteTransaction}
-          ui={ui}
-          language={language}
-        />
+        <button
+          type="button"
+          onClick={() => setShowRecentTransactions((current) => !current)}
+          aria-expanded={showRecentTransactions}
+          className="button-secondary mb-4 w-full justify-center sm:w-auto"
+        >
+          {showRecentTransactions ? ui.dashboard.hideRecent : ui.dashboard.showRecent}
+        </button>
+        {showRecentTransactions ? (
+          <RecentTransactionList
+            transactions={transactions.slice(0, 3)}
+            emptyTitle={ui.emptyStates.dashboardTitle}
+            emptyMessage={ui.emptyStates.dashboardText}
+            emptyAction={
+              <button type="button" onClick={onCreateTransaction} className="button-primary w-full sm:w-auto">
+                <Plus size={16} aria-hidden />
+                {ui.actions.newTransaction}
+              </button>
+            }
+            language={language}
+          />
+        ) : null}
       </section>
     </div>
   );
@@ -2735,6 +2746,56 @@ function MetricCard({ label, value, tone }: { label: string; value: string; tone
     <div className={`rounded-md border border-line p-4 shadow-sm ${tone}`}>
       <p className="text-xs font-bold uppercase tracking-wide opacity-80">{label}</p>
       <p className="mt-2 text-xl font-extrabold leading-tight">{value}</p>
+    </div>
+  );
+}
+
+function RecentTransactionList({
+  transactions,
+  emptyTitle,
+  emptyMessage,
+  emptyAction,
+  language
+}: {
+  transactions: Transaction[];
+  emptyTitle: string;
+  emptyMessage: string;
+  emptyAction?: React.ReactNode;
+  language: Language;
+}) {
+  if (!transactions.length) {
+    return <EmptyState title={emptyTitle} text={emptyMessage} action={emptyAction} />;
+  }
+
+  return (
+    <div className="grid gap-3">
+      {transactions.map((transaction) => (
+        <article key={transaction.id} className="soft-card">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-base font-extrabold leading-snug text-ink">{transaction.label}</p>
+              <p className="mt-1 text-sm font-semibold text-moss">{formatDisplayDate(transaction.date, language)}</p>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold text-moss">
+                <span className="border border-moss/20 bg-mint px-2 py-1 text-ink" style={{ borderRadius: 6 }}>
+                  {transactionKindLabels[transaction.kind][language]}
+                </span>
+                {transaction.category ? (
+                  <span className="border border-line bg-mint px-2 py-1" style={{ borderRadius: 6 }}>
+                    {translateCategoryName(transaction.category, language)}
+                  </span>
+                ) : null}
+                {transaction.paymentMethod ? (
+                  <span className="border border-line bg-white px-2 py-1" style={{ borderRadius: 6 }}>
+                    {translatePaymentMethod(transaction.paymentMethod, language)}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <p className="shrink-0 text-right text-lg font-bold text-ink">{formatCurrency(transaction.amount)}</p>
+          </div>
+          <p className="mt-3 text-sm leading-6 text-moss">{getDisplayedExplanation(transaction, language)}</p>
+        </article>
+      ))}
     </div>
   );
 }

@@ -75,7 +75,10 @@ export const translations = {
       cashVsProfit: "L'argent disponible inclut les apports, prêts et paiements. Le bénéfice montre seulement les revenus moins les dépenses.",
       healthPositive: "Votre activité est rentable sur cette période: les revenus sont supérieurs aux dépenses.",
       healthZero: "Aucun bénéfice pour le moment sur cette période. Ajoutez des revenus ou vérifiez vos dépenses.",
-      healthNegative: "Les dépenses sont supérieures aux revenus sur cette période. Ce n'est pas grave, mais c'est un signal à surveiller."
+      healthNegative: "Les dépenses sont supérieures aux revenus sur cette période. Ce n'est pas grave, mais c'est un signal à surveiller.",
+      manageTransactions: "Gérer les transactions",
+      showRecent: "Afficher les dernières transactions",
+      hideRecent: "Masquer les dernières transactions"
     },
     transactionsPage: {
       subtitle: "Recherchez, filtrez et gérez vos opérations.",
@@ -379,7 +382,10 @@ export const translations = {
       cashVsProfit: "Cash available includes owner investments, loans, and payments. Profit only shows revenue minus expenses.",
       healthPositive: "Your business is profitable for this period: revenue is higher than expenses.",
       healthZero: "There is no profit yet for this period. Add revenue or review your expenses.",
-      healthNegative: "Expenses are higher than revenue for this period. It is not scary, but it is a signal to watch."
+      healthNegative: "Expenses are higher than revenue for this period. It is not scary, but it is a signal to watch.",
+      manageTransactions: "Manage transactions",
+      showRecent: "Show recent transactions",
+      hideRecent: "Hide recent transactions"
     },
     transactionsPage: {
       subtitle: "Search, filter, and manage your activity.",
