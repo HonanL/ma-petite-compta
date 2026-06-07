@@ -982,6 +982,7 @@ export default function MaPetiteComptaClient({ activePage, editTransactionId = n
               {tab === "learn" && <Learning ui={ui} language={language} />}
               {tab === "settings" && (
                 <Settings
+                  transactions={transactions}
                   profile={profile}
                   setProfile={setProfile}
                   hasSamples={transactions.some((transaction) => transaction.isSample)}
@@ -2315,13 +2316,26 @@ function BusinessProfileView({
   );
 }
 
-function AuthSettings({ ui }: { ui: AppTranslations }) {
+function AuthSettings({
+  ui,
+  transactions,
+  profile,
+  language
+}: {
+  ui: AppTranslations;
+  transactions: Transaction[];
+  profile: BusinessProfile;
+  language: Language;
+}) {
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const [authMessage, setAuthMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(false);
+  const [migrationMessage, setMigrationMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [migrationLoading, setMigrationLoading] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
@@ -2333,6 +2347,7 @@ function AuthSettings({ ui }: { ui: AppTranslations }) {
     supabase.auth.getUser().then(({ data }) => {
       if (isMounted) {
         setUserEmail(data.user?.email ?? null);
+        setUserId(data.user?.id ?? null);
       }
     });
 
@@ -2340,6 +2355,7 @@ function AuthSettings({ ui }: { ui: AppTranslations }) {
       data: { subscription }
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setUserEmail(session?.user.email ?? null);
+      setUserId(session?.user.id ?? null);
     });
 
     return () => {
@@ -2396,6 +2412,139 @@ function AuthSettings({ ui }: { ui: AppTranslations }) {
     }
 
     setAuthMessage({ type: "success", text: ui.auth.signOutSuccess });
+  };
+
+  const copyLocalDataToCloud = async () => {
+    if (!supabase || !userId) {
+      setMigrationMessage({ type: "error", text: ui.auth.migrationMissingSession });
+      return;
+    }
+
+    const confirmed = window.confirm(ui.auth.migrationConfirm);
+    if (!confirmed) {
+      return;
+    }
+
+    setMigrationLoading(true);
+    setMigrationMessage(null);
+
+    try {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({ id: userId, preferred_language: language }, { onConflict: "id" });
+
+      if (profileError) {
+        throw profileError;
+      }
+
+      const { data: existingBusiness, error: businessReadError } = await supabase
+        .from("businesses")
+        .select("id")
+        .eq("owner_id", userId)
+        .order("created_at", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (businessReadError) {
+        throw businessReadError;
+      }
+
+      let businessId = existingBusiness?.id as string | undefined;
+
+      if (!businessId) {
+        const { data: createdBusiness, error: businessCreateError } = await supabase
+          .from("businesses")
+          .insert({
+            owner_id: userId,
+            name: "Ma Petite Compta",
+            business_profile: profile,
+            currency: "FCFA"
+          })
+          .select("id")
+          .single();
+
+        if (businessCreateError) {
+          throw businessCreateError;
+        }
+
+        businessId = createdBusiness.id as string;
+      } else {
+        const { error: businessUpdateError } = await supabase
+          .from("businesses")
+          .update({
+            business_profile: profile,
+            currency: "FCFA"
+          })
+          .eq("id", businessId);
+
+        if (businessUpdateError) {
+          throw businessUpdateError;
+        }
+      }
+
+      const { error: membershipError } = await supabase
+        .from("business_members")
+        .upsert({ business_id: businessId, user_id: userId, role: "owner" }, { onConflict: "business_id,user_id" });
+
+      if (membershipError) {
+        throw membershipError;
+      }
+
+      const { error: settingsError } = await supabase
+        .from("app_settings")
+        .upsert(
+          {
+            user_id: userId,
+            default_business_id: businessId,
+            preferred_language: language,
+            last_synced_at: new Date().toISOString()
+          },
+          { onConflict: "user_id" }
+        );
+
+      if (settingsError) {
+        throw settingsError;
+      }
+
+      if (transactions.length) {
+        const cloudTransactions = transactions.map((transaction) => ({
+          business_id: businessId,
+          user_id: userId,
+          local_transaction_id: transaction.id,
+          transaction_date: transaction.date,
+          kind: transaction.kind,
+          description: transaction.label,
+          amount: transaction.amount,
+          currency: "FCFA",
+          category: transaction.category || null,
+          payment_method: transaction.paymentMethod ?? "Autre",
+          party_name: transaction.partyName || null,
+          note: transaction.note || null,
+          is_sample: transaction.isSample ?? false,
+          generated_accounting: transaction.generated ?? {}
+        }));
+
+        const { error: transactionsError } = await supabase
+          .from("transactions")
+          .upsert(cloudTransactions, { onConflict: "business_id,local_transaction_id" });
+
+        if (transactionsError) {
+          throw transactionsError;
+        }
+      }
+
+      setMigrationMessage({
+        type: "success",
+        text: ui.auth.migrationSuccess.replace("{count}", String(transactions.length))
+      });
+    } catch (error) {
+      setMigrationMessage({
+        type: "error",
+        text: error instanceof Error ? error.message : ui.auth.migrationError
+      });
+    } finally {
+      setMigrationLoading(false);
+    }
   };
 
   return (
@@ -2496,11 +2645,41 @@ function AuthSettings({ ui }: { ui: AppTranslations }) {
           {authMessage.text}
         </p>
       ) : null}
+
+      {userEmail ? (
+        <div className="mt-5 rounded-md border border-line bg-white p-4">
+          <p className="label">{ui.auth.migrationTitle}</p>
+          <h3 className="mt-1 text-lg font-bold text-ink">{ui.auth.migrationHeading}</h3>
+          <p className="mt-2 text-sm leading-6 text-moss">{ui.auth.migrationText}</p>
+          <p className="mt-2 text-sm font-semibold text-moss">
+            {ui.auth.localTransactionCount}: {transactions.length}
+          </p>
+          <button
+            type="button"
+            onClick={copyLocalDataToCloud}
+            disabled={migrationLoading}
+            className="button-primary mt-4 w-full sm:w-auto disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Upload size={16} aria-hidden />
+            {ui.auth.copyLocalToCloud}
+          </button>
+          {migrationMessage ? (
+            <p
+              role="status"
+              aria-live="polite"
+              className={`mt-3 rounded-md border px-3 py-2 text-sm font-semibold ${migrationMessage.type === "success" ? "border-accent bg-mint text-moss" : "border-clay/30 bg-white text-clay"}`}
+            >
+              {migrationMessage.text}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }
 
 function Settings({
+  transactions,
   profile,
   setProfile,
   hasSamples,
@@ -2515,6 +2694,7 @@ function Settings({
   ui,
   language
 }: {
+  transactions: Transaction[];
   profile: BusinessProfile;
   setProfile: (profile: BusinessProfile) => void;
   hasSamples: boolean;
@@ -2560,7 +2740,7 @@ function Settings({
         </div>
       </section>
 
-      <AuthSettings ui={ui} />
+      <AuthSettings ui={ui} transactions={transactions} profile={profile} language={language} />
 
       <section className="grid gap-5 lg:grid-cols-2">
         <article className="panel p-4 sm:p-5">
