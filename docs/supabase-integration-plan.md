@@ -54,6 +54,25 @@ Security:
 - Business members can read business data.
 - Users can insert/update/delete their own transactions within businesses where they are members.
 
+## Environment setup
+
+Create a local environment file:
+
+```bash
+cp .env.example .env.local
+```
+
+Then add the values from the Supabase project dashboard:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
+
+`NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` is the preferred key name for the current setup. The app also accepts `NEXT_PUBLIC_SUPABASE_ANON_KEY` as a compatibility fallback for older projects or older Supabase docs.
+
+Do not commit `.env.local`, and do not hardcode Supabase keys in application code.
+
 ## Migration strategy from localStorage to cloud
 
 The safe migration should happen in stages.
